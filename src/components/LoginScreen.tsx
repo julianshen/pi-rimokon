@@ -132,7 +132,7 @@ function ConfigNotice() {
       }}
     >
       <div style={{ fontWeight: 650, color: '#1b1b1d', marginBottom: 6 }}>Sign-in isn't configured yet</div>
-      Set these environment variables, then reload:
+      Set these environment variables, then restart the dev server (or redeploy):
       <div
         style={{
           fontFamily: "'JetBrains Mono',monospace",
