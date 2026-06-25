@@ -7,39 +7,43 @@ import { buildThreadView, type AgentThreadItem, type ToolView } from '../../lib/
 import { MockPiService } from '../../services/MockPiService'
 import { ToolCard } from './ToolCard'
 
-// A freshly started session contains a single agent message exercising every
-// ToolKind (read/search/edit/create/bash/test), mirroring how SessionScreen
-// derives tool views via buildThreadView(session, step).
-function toolViewsForAllKinds(): ToolView[] {
-  const sess = new MockPiService().startSession({
-    prompt: 'do the thing',
-    repo: 'acme/web-app',
-    model: 'sonnet',
-    skills: {},
-  })
-  // A large step marks every streamed tool as done (no spinner) so meta + diff render.
-  const view = buildThreadView(sess, 9999)
-  const agent = view.items.find((i): i is AgentThreadItem => i.kind === 'agent')
-  if (!agent) throw new Error('expected an agent thread item')
-  return agent.tools
+// Collect tool views across every session (seeds + a freshly started one, which
+// together exercise all six ToolKinds), mirroring how SessionScreen derives tool
+// views via buildThreadView(session, step). A large step marks every streamed
+// tool as done (no spinner) so meta + diff render.
+function allToolViews(): ToolView[] {
+  const svc = new MockPiService()
+  svc.startSession({ prompt: 'do the thing', repo: 'acme/web-app', model: 'sonnet', skills: {} })
+  const views: ToolView[] = []
+  for (const sess of svc.listSessions()) {
+    const view = buildThreadView(sess, 9999)
+    for (const item of view.items) {
+      if (item.kind === 'agent') views.push(...(item as AgentThreadItem).tools)
+    }
+  }
+  return views
 }
 
 const ALL_KINDS: ToolKind[] = ['read', 'search', 'edit', 'create', 'bash', 'test']
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 describe('ToolCard', () => {
   it('renders the verb, path and meta for a completed tool', () => {
-    const views = toolViewsForAllKinds()
-    const read = views.find((v) => v.verb === TOOL_META.read.verb)
-    if (!read) throw new Error('expected a read tool view')
+    const views = allToolViews()
+    const read = views.find((v) => v.verb === TOOL_META.read.verb && !!v.meta && v.done)
+    if (!read || !read.meta) throw new Error('expected a completed read tool view with meta')
 
     render(<ToolCard tool={read} />)
     expect(screen.getByText(TOOL_META.read.verb)).toBeInTheDocument()
     expect(screen.getByText(read.path)).toBeInTheDocument()
-    if (read.meta) expect(screen.getByText(read.meta)).toBeInTheDocument()
+    expect(screen.getByText(read.meta)).toBeInTheDocument()
   })
 
   it.each(ALL_KINDS)('renders the per-kind verb for kind "%s"', (kind) => {
-    const views = toolViewsForAllKinds()
+    const views = allToolViews()
     const verb = TOOL_META[kind].verb
     const view = views.find((v) => v.verb === verb)
     if (!view) throw new Error(`expected a ${kind} tool view`)
@@ -51,13 +55,14 @@ describe('ToolCard', () => {
   })
 
   it('renders a diff body when the tool has diff lines', () => {
-    const views = toolViewsForAllKinds()
-    const withDiff = views.find((v) => v.hasDiff)
-    if (!withDiff) throw new Error('expected a tool view with a diff')
+    const views = allToolViews()
+    const withDiff = views.find((v) => v.hasDiff && v.diff.some((d) => d.code.trim().length > 0))
+    if (!withDiff) throw new Error('expected a tool view with a non-empty diff')
+    const line = withDiff.diff.find((d) => d.code.trim().length > 0)!
 
     render(<ToolCard tool={withDiff} />)
-    // The seed "create" tool diff contains the rateLimit function signature.
-    expect(screen.getByText(/rateLimit/)).toBeInTheDocument()
+    // A diff code line is rendered in the diff body.
+    expect(screen.getByText(new RegExp(escapeRegExp(line.code.slice(0, 12))))).toBeInTheDocument()
   })
 
   it('shows a running spinner and no meta while a tool is still running', () => {

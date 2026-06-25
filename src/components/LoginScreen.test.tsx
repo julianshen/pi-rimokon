@@ -3,8 +3,15 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { AuthValue } from '../hooks/useAuth'
 import { ThemeProvider } from '../hooks/useTheme'
-import { AuthProvider } from '../hooks/useAuth'
 import { LoginScreen } from './LoginScreen'
+
+// Drive every LoginScreen branch by stubbing useAuth. The signed-out GitHub-button
+// path is otherwise unreachable in tests (no Supabase env -> 'unconfigured').
+const authState = vi.hoisted(() => ({ value: null as AuthValue | null }))
+vi.mock('../hooks/useAuth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/useAuth')>()
+  return { ...actual, useAuth: () => authState.value }
+})
 
 function mockSystemLight() {
   vi.spyOn(window, 'matchMedia').mockReturnValue({
@@ -14,28 +21,40 @@ function mockSystemLight() {
   } as unknown as MediaQueryList)
 }
 
-describe('LoginScreen (real, unconfigured env)', () => {
-  beforeEach(() => mockSystemLight())
-
-  function renderReal() {
-    return render(
-      <ThemeProvider>
-        <AuthProvider>
-          <LoginScreen />
-        </AuthProvider>
-      </ThemeProvider>,
-    )
+function makeAuth(over: Partial<AuthValue>): AuthValue {
+  return {
+    status: 'unconfigured',
+    user: null,
+    profile: null,
+    signInWith: vi.fn(async () => {}),
+    signOut: vi.fn(async () => {}),
+    ...over,
   }
+}
+
+function renderLogin() {
+  return render(
+    <ThemeProvider>
+      <LoginScreen />
+    </ThemeProvider>,
+  )
+}
+
+describe('LoginScreen (unconfigured)', () => {
+  beforeEach(() => {
+    mockSystemLight()
+    authState.value = makeAuth({ status: 'unconfigured' })
+  })
 
   it('shows the brand, heading and tagline', () => {
-    renderReal()
+    renderLogin()
     expect(screen.getByText('π')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Pi Remote' })).toBeInTheDocument()
     expect(screen.getByText(/reach your coding sessions/i)).toBeInTheDocument()
   })
 
-  it('renders the not-configured notice with the required env var names (no env)', () => {
-    renderReal()
+  it('renders the not-configured notice with the required env var names', () => {
+    renderLogin()
     expect(screen.getByText(/Sign-in isn't configured yet/i)).toBeInTheDocument()
     expect(screen.getByText('VITE_SUPABASE_URL')).toBeInTheDocument()
     expect(screen.getByText('VITE_SUPABASE_ANON_KEY')).toBeInTheDocument()
@@ -44,55 +63,38 @@ describe('LoginScreen (real, unconfigured env)', () => {
   })
 
   it('includes a theme toggle', () => {
-    renderReal()
+    renderLogin()
     expect(screen.getByRole('button', { name: /switch to (dark|light) theme/i })).toBeInTheDocument()
   })
-})
-
-// Drive the signed-out branch (GitHub button + busy + error handling) by stubbing
-// useAuth, which is unreachable with no Supabase env configured.
-const authState = vi.hoisted(() => ({ value: null as AuthValue | null }))
-vi.mock('../hooks/useAuth', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../hooks/useAuth')>()
-  return { ...actual, useAuth: () => authState.value }
 })
 
 describe('LoginScreen (signed-out branch)', () => {
   beforeEach(() => mockSystemLight())
 
-  function renderSignedOut(signInWith: AuthValue['signInWith']) {
-    authState.value = {
-      status: 'signed-out',
-      user: null,
-      profile: null,
-      signInWith,
-      signOut: vi.fn(async () => {}),
-    }
-    return render(
-      <ThemeProvider>
-        <LoginScreen />
-      </ThemeProvider>,
-    )
-  }
-
   it('renders a GitHub sign-in button and calls signInWith on click', async () => {
     const user = userEvent.setup()
     const signInWith = vi.fn(async () => {})
-    renderSignedOut(signInWith)
+    authState.value = makeAuth({ status: 'signed-out', signInWith })
+    renderLogin()
     const btn = screen.getByRole('button', { name: /Continue with GitHub/i })
     await user.click(btn)
     expect(signInWith).toHaveBeenCalledWith('github')
+    // success keeps the button in its connecting state (redirect is imminent)
+    expect(screen.getByRole('button', { name: /Connecting…/i })).toBeInTheDocument()
   })
 
-  it('shows an error message when sign-in fails', async () => {
+  it('shows an error message when sign-in fails with an Error', async () => {
     const user = userEvent.setup()
     const signInWith = vi.fn(async () => {
       throw new Error('OAuth blew up')
     })
-    renderSignedOut(signInWith)
+    authState.value = makeAuth({ status: 'signed-out', signInWith })
+    renderLogin()
     await user.click(screen.getByRole('button', { name: /Continue with GitHub/i }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('OAuth blew up')
+    // failure resets the button back to its label
+    expect(screen.getByRole('button', { name: /Continue with GitHub/i })).toBeInTheDocument()
   })
 
   it('shows a generic error message for a non-Error rejection', async () => {
@@ -100,7 +102,8 @@ describe('LoginScreen (signed-out branch)', () => {
     const signInWith = vi.fn(async () => {
       throw 'string failure'
     })
-    renderSignedOut(signInWith)
+    authState.value = makeAuth({ status: 'signed-out', signInWith })
+    renderLogin()
     await user.click(screen.getByRole('button', { name: /Continue with GitHub/i }))
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(/Could not start sign-in/i)

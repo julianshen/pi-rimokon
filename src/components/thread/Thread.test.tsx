@@ -65,7 +65,8 @@ describe('Thread', () => {
     renderThread(sess, 9999, { onReview })
 
     const reviewBtn = screen.getByRole('button', { name: /review changes/i })
-    expect(screen.getByText(/files changed/)).toBeInTheDocument()
+    // The CTA shows the changed-file summary label (distinct from the prose).
+    expect(screen.getByText(/\d+ files changed · \+\d+ −\d+/)).toBeInTheDocument()
     await user.click(reviewBtn)
     expect(onReview).toHaveBeenCalledTimes(1)
   })
