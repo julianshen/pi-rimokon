@@ -23,6 +23,45 @@ export const colors = {
   amber: '#b9772a',
 } as const
 
+// ---- theme mode (light / dark / system) ----
+// The active theme is driven by a `data-theme` attribute on <html>; the CSS
+// variables in global.css resolve every palette token per theme. These helpers
+// are the pure, testable core that the ThemeProvider wires together.
+
+export type ThemeMode = 'light' | 'dark' | 'system'
+export type ResolvedTheme = 'light' | 'dark'
+
+export const THEME_STORAGE_KEY = 'pi-theme'
+
+const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system']
+
+/** Resolve the concrete theme to apply from the user's mode + system preference. */
+export function resolveTheme(mode: ThemeMode, prefersDark: boolean): ResolvedTheme {
+  if (mode === 'system') return prefersDark ? 'dark' : 'light'
+  return mode
+}
+
+/** Whether the OS currently prefers a dark color scheme. */
+export function systemPrefersDark(): boolean {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+/** Read the persisted theme mode, defaulting to "system" when absent/invalid. */
+export function readStoredMode(): ThemeMode {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY)
+  return stored && (THEME_MODES as string[]).includes(stored) ? (stored as ThemeMode) : 'system'
+}
+
+/** Persist the chosen theme mode. */
+export function storeMode(mode: ThemeMode): void {
+  localStorage.setItem(THEME_STORAGE_KEY, mode)
+}
+
+/** Apply the resolved theme by setting `data-theme` on <html>. */
+export function applyTheme(resolved: ResolvedTheme): void {
+  document.documentElement.setAttribute('data-theme', resolved)
+}
+
 export type StatusKey = 'working' | 'review' | 'waiting' | 'done' | 'error'
 
 export interface StatusDef {
