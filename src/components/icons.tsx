@@ -186,7 +186,7 @@ export function RewindIcon({ size = 12, ...p }: IconProps) {
 
 export function BookmarkIcon({ size = 13, ...p }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="#b9772a" stroke="none" {...p}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--pi-amber)" stroke="none" {...p}>
       <path d="M6 3h12v18l-6-4-6 4z" />
     </svg>
   )
@@ -196,7 +196,7 @@ export function SpinnerIcon({ size = 13, ...p }: IconProps) {
   return (
     <svg
       {...svgBase(size, p)}
-      stroke="#b9772a"
+      stroke="var(--pi-amber)"
       strokeWidth={2.4}
       strokeLinecap="round"
       style={{ animation: 'pi-spin .8s linear infinite', flex: 'none', ...(p.style || {}) }}

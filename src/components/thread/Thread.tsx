@@ -123,11 +123,11 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                     flexWrap: 'wrap',
                     padding: '13px 14px',
                     background: 'var(--pi-green-soft)',
-                    border: '1px solid #bfe0cc',
+                    border: '1px solid var(--pi-green)',
                     borderRadius: 12,
                   }}
                 >
-                  <CheckIcon size={18} stroke="#1f8a5b" strokeWidth={2} style={{ flex: 'none' }} />
+                  <CheckIcon size={18} stroke="var(--pi-green)" strokeWidth={2} style={{ flex: 'none' }} />
                   <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--pi-green-deep)', flex: 1, minWidth: 120 }}>{m.reviewLabel}</span>
                   <button
                     className="pi-hover-green"
