@@ -25,7 +25,7 @@ export function SessionTree({ session, onClose, onRewind }: SessionTreeProps) {
           zIndex: 51,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-16px 0 50px rgba(40,36,28,.14)',
+          boxShadow: '-16px 0 50px rgba(var(--pi-shadow-rgb),.14)',
           animation: 'pi-slide .22s cubic-bezier(.2,.8,.2,1)',
         }}
       >

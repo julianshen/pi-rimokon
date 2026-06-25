@@ -69,7 +69,7 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
           zIndex: 61,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '16px 0 50px rgba(40,36,28,.18)',
+          boxShadow: '16px 0 50px rgba(var(--pi-shadow-rgb),.18)',
           animation: 'pi-slide .2s ease',
         }}
       >

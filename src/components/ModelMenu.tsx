@@ -16,7 +16,7 @@ export function ModelMenu({ model, onPick }: ModelMenuProps) {
         background: 'var(--pi-surface)',
         border: '1px solid var(--pi-border)',
         borderRadius: 12,
-        boxShadow: '0 14px 40px rgba(40,36,28,.16)',
+        boxShadow: '0 14px 40px rgba(var(--pi-shadow-rgb),.16)',
         padding: 6,
         zIndex: 40,
         animation: 'pi-rise .14s ease',

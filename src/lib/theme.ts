@@ -114,20 +114,15 @@ export function dotStyle(st: StatusDef, big = false): React.CSSProperties {
 // Tool-call presentation (icon + verb + accent color per tool kind).
 export type ToolKind = 'read' | 'search' | 'edit' | 'create' | 'bash' | 'test'
 
-export const TOOL_META: Record<ToolKind, { icon: IconName; verb: string; color: string }> = {
-  read: { icon: 'file', verb: 'Read', color: 'var(--pi-text-muted)' },
-  search: { icon: 'search', verb: 'Search', color: 'var(--pi-text-muted)' },
-  edit: { icon: 'pencil', verb: 'Edit', color: 'var(--pi-blue)' },
-  create: { icon: 'create', verb: 'Create', color: 'var(--pi-green)' },
-  bash: { icon: 'terminal', verb: 'Run', color: 'var(--pi-text-body)' },
-  test: { icon: 'check', verb: 'Test', color: 'var(--pi-green)' },
-}
-
-export function toolIconBg(color: string): string {
-  if (color === 'var(--pi-text-muted)') return 'var(--pi-border-hair)'
-  if (color === 'var(--pi-blue)') return 'var(--pi-blue-soft)'
-  if (color === 'var(--pi-green)') return 'var(--pi-green-soft)'
-  return 'var(--pi-surface-alt)'
+// Each tool kind carries both its accent color and the icon-chip background, so
+// the two stay in sync (no separate color→bg mapping to keep aligned).
+export const TOOL_META: Record<ToolKind, { icon: IconName; verb: string; color: string; bg: string }> = {
+  read: { icon: 'file', verb: 'Read', color: 'var(--pi-text-muted)', bg: 'var(--pi-border-hair)' },
+  search: { icon: 'search', verb: 'Search', color: 'var(--pi-text-muted)', bg: 'var(--pi-border-hair)' },
+  edit: { icon: 'pencil', verb: 'Edit', color: 'var(--pi-blue)', bg: 'var(--pi-blue-soft)' },
+  create: { icon: 'create', verb: 'Create', color: 'var(--pi-green)', bg: 'var(--pi-green-soft)' },
+  bash: { icon: 'terminal', verb: 'Run', color: 'var(--pi-text-body)', bg: 'var(--pi-surface-alt)' },
+  test: { icon: 'check', verb: 'Test', color: 'var(--pi-green)', bg: 'var(--pi-green-soft)' },
 }
 
 export type IconName =

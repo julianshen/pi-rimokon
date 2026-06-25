@@ -50,7 +50,7 @@ export function SessionScreen(props: SessionScreenProps) {
           gap: 12,
           padding: '13px 20px',
           borderBottom: '1px solid var(--pi-border-card)',
-          background: 'rgba(244,242,236,.85)',
+          background: 'rgba(var(--pi-paper-rgb), .85)',
           backdropFilter: 'blur(6px)',
         }}
       >

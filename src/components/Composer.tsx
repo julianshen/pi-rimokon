@@ -25,7 +25,7 @@ function segStyle(active: boolean): React.CSSProperties {
     cursor: 'pointer',
     background: active ? 'var(--pi-surface)' : 'transparent',
     color: active ? 'var(--pi-text)' : 'var(--pi-text-faint)',
-    boxShadow: active ? '0 1px 2px rgba(40,36,28,.12)' : 'none',
+    boxShadow: active ? '0 1px 2px rgba(var(--pi-shadow-rgb),.12)' : 'none',
   }
 }
 
@@ -128,7 +128,7 @@ export function Composer({
           </div>
         )}
 
-        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-scrollbar)', borderRadius: 14, padding: '12px 14px 10px', boxShadow: '0 2px 12px rgba(40,36,28,.05)' }}>
+        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-scrollbar)', borderRadius: 14, padding: '12px 14px 10px', boxShadow: '0 2px 12px rgba(var(--pi-shadow-rgb),.05)' }}>
           <textarea
             value={composer}
             onChange={(e) => onComposerChange(e.target.value)}

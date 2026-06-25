@@ -52,7 +52,7 @@ export function LoginScreen() {
           border: '1px solid var(--pi-border-card)',
           borderRadius: 16,
           padding: '38px 32px 30px',
-          boxShadow: '0 18px 50px rgba(40,36,28,.10)',
+          boxShadow: '0 18px 50px rgba(var(--pi-shadow-rgb),.10)',
           animation: 'pi-rise .3s ease',
           textAlign: 'center',
         }}

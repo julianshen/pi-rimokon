@@ -39,7 +39,7 @@ export function ComposeScreen(props: ComposeScreenProps) {
           </p>
         </div>
 
-        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-border-card)', borderRadius: 16, padding: 8, boxShadow: '0 4px 20px rgba(40,36,28,.05)' }}>
+        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-border-card)', borderRadius: 16, padding: 8, boxShadow: '0 4px 20px rgba(var(--pi-shadow-rgb),.05)' }}>
           <div style={{ display: 'flex', gap: 8, padding: '10px 10px 0', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
               <button
@@ -54,7 +54,7 @@ export function ComposeScreen(props: ComposeScreenProps) {
                 <ChevronDown size={13} stroke="var(--pi-text-faint)" />
               </button>
               {props.repoMenu && (
-                <div style={{ position: 'absolute', top: 46, left: 0, right: 0, background: 'var(--pi-surface)', border: '1px solid var(--pi-border)', borderRadius: 11, boxShadow: '0 12px 36px rgba(40,36,28,.15)', padding: 5, zIndex: 30 }}>
+                <div style={{ position: 'absolute', top: 46, left: 0, right: 0, background: 'var(--pi-surface)', border: '1px solid var(--pi-border)', borderRadius: 11, boxShadow: '0 12px 36px rgba(var(--pi-shadow-rgb),.15)', padding: 5, zIndex: 30 }}>
                   {REPO_OPTIONS.map((name) => (
                     <button
                       key={name}

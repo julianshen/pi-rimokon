@@ -7,6 +7,8 @@
   color-scheme: light;
   /* surfaces */
   --pi-paper: #f4f2ec;
+  --pi-paper-rgb: 244, 242, 236; /* for translucent paper (blurred headers) */
+  --pi-shadow-rgb: 40, 36, 28; /* base for box-shadows */
   --pi-sidebar: #efece4;
   --pi-surface: #ffffff;
   --pi-surface-muted: #faf8f2;
@@ -66,6 +68,8 @@
   color-scheme: dark;
   /* surfaces */
   --pi-paper: #14161b;
+  --pi-paper-rgb: 20, 22, 27;
+  --pi-shadow-rgb: 0, 0, 0;
   --pi-sidebar: #191c22;
   --pi-surface: #1d2027;
   --pi-surface-muted: #23272f;
@@ -234,7 +238,7 @@ input:focus {
 }
 .pi-hover-card:hover {
   border-color: var(--pi-border-strong) !important;
-  box-shadow: 0 6px 20px rgba(40, 36, 28, 0.07) !important;
+  box-shadow: 0 6px 20px rgba(var(--pi-shadow-rgb), 0.07) !important;
   transform: translateY(-1px);
 }
 .pi-hover-soft:hover {

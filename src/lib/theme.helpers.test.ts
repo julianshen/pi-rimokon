@@ -5,7 +5,6 @@ import {
   pillStyle,
   dotStyle,
   TOOL_META,
-  toolIconBg,
   diffLineStyle,
   fileBadgeColors,
   type StatusKey,
@@ -62,29 +61,23 @@ describe('dotStyle', () => {
   })
 })
 
-describe('toolIconBg', () => {
-  it('maps muted to the hairline border bg', () => {
-    expect(toolIconBg(TOOL_META.read.color)).toBe('var(--pi-border-hair)')
-    expect(toolIconBg('var(--pi-text-muted)')).toBe('var(--pi-border-hair)')
-  })
-  it('maps blue to the blue soft bg', () => {
-    expect(toolIconBg(TOOL_META.edit.color)).toBe('var(--pi-blue-soft)')
-  })
-  it('maps green to the green soft bg', () => {
-    expect(toolIconBg(TOOL_META.create.color)).toBe('var(--pi-green-soft)')
-    expect(toolIconBg(TOOL_META.test.color)).toBe('var(--pi-green-soft)')
-  })
-  it('falls back to the surface-alt bg for any other color', () => {
-    expect(toolIconBg(TOOL_META.bash.color)).toBe('var(--pi-surface-alt)')
-    expect(toolIconBg('var(--pi-text-body)')).toBe('var(--pi-surface-alt)')
-    expect(toolIconBg('#123456')).toBe('var(--pi-surface-alt)')
+describe('TOOL_META', () => {
+  it('co-locates each tool kind accent color with its icon-chip background', () => {
+    expect(TOOL_META.read.bg).toBe('var(--pi-border-hair)')
+    expect(TOOL_META.search.bg).toBe('var(--pi-border-hair)')
+    expect(TOOL_META.edit.color).toBe('var(--pi-blue)')
+    expect(TOOL_META.edit.bg).toBe('var(--pi-blue-soft)')
+    expect(TOOL_META.create.bg).toBe('var(--pi-green-soft)')
+    expect(TOOL_META.test.bg).toBe('var(--pi-green-soft)')
+    expect(TOOL_META.bash.bg).toBe('var(--pi-surface-alt)')
   })
 
-  it('every TOOL_META entry has a defined verb, icon and color', () => {
+  it('every TOOL_META entry has a defined verb, icon, color and bg', () => {
     for (const meta of Object.values(TOOL_META)) {
       expect(meta.verb).toBeTruthy()
       expect(meta.icon).toBeTruthy()
       expect(meta.color).toContain('var(--pi-')
+      expect(meta.bg).toContain('var(--pi-')
     }
   })
 })

@@ -87,7 +87,7 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
                 borderRadius: 8,
                 cursor: 'pointer',
                 background: i === diffIndex ? 'var(--pi-surface)' : 'transparent',
-                boxShadow: i === diffIndex ? '0 1px 3px rgba(40,36,28,.08)' : 'none',
+                boxShadow: i === diffIndex ? '0 1px 3px rgba(var(--pi-shadow-rgb),.08)' : 'none',
               }}
             >
               <span style={badgeStyle(c.status)}>{c.status}</span>
