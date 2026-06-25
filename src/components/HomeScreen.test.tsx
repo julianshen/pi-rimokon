@@ -31,11 +31,13 @@ describe('HomeScreen', () => {
 
   it('renders the full filter bar with per-status counts', () => {
     renderHome()
-    for (const label of ['All', 'Working', 'Needs review', 'Waiting', 'Done']) {
-      expect(screen.getByRole('button', { name: new RegExp(label) })).toBeInTheDocument()
-    }
-    // "All" shows the total session count (6 seed sessions).
-    expect(screen.getByRole('button', { name: /All/ })).toHaveTextContent('6')
+    // Filter chips render their label immediately followed by a count, with no
+    // intervening text (cards embed the same labels, so anchor to disambiguate).
+    expect(screen.getByRole('button', { name: /^All6$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Working2$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Needs review1$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Waiting1$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Done1$/ })).toBeInTheDocument()
   })
 
   it('shows every session card when filter is "all"', () => {
@@ -98,7 +100,8 @@ describe('HomeScreen', () => {
   it('fires onFilter with the chip key when a filter is clicked', async () => {
     const user = userEvent.setup()
     const props = renderHome()
-    await user.click(screen.getByRole('button', { name: /Needs review/ }))
+    // Anchor to the chip ("Needs review1"), not the s2 card pill.
+    await user.click(screen.getByRole('button', { name: /^Needs review1$/ }))
     expect(props.onFilter).toHaveBeenCalledWith('review')
   })
 

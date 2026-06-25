@@ -52,8 +52,9 @@ describe('Thread', () => {
     const sess = sessionById('s1')
     renderThread(sess, 9999)
 
-    // Tool paths from the seed render inside the cards.
-    expect(screen.getByText('src/auth/login.ts')).toBeInTheDocument()
+    // Tool paths from the seed render inside the cards. login.ts is both read
+    // and edited, so it appears twice; the others are unique.
+    expect(screen.getAllByText('src/auth/login.ts').length).toBeGreaterThanOrEqual(2)
     expect(screen.getByText('src/middleware/rateLimit.ts')).toBeInTheDocument()
     expect(screen.getByText('npm test -- auth')).toBeInTheDocument()
   })
