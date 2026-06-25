@@ -7,16 +7,19 @@ import { GoogleG, PiMark } from './icons'
 export function LoginScreen() {
   const { status, signInWithGoogle } = useAuth()
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const unconfigured = status === 'unconfigured'
 
   const onSignIn = async () => {
     setBusy(true)
+    setError(null)
     try {
       // On success this navigates away to Google, so `busy` simply stays true
-      // until the redirect happens; we only reset it if the call rejects.
+      // until the redirect happens; we only reset it on failure.
       await signInWithGoogle()
-    } catch {
+    } catch (err) {
       setBusy(false)
+      setError(err instanceof Error ? err.message : 'Could not start Google sign-in. Please try again.')
     }
   }
 
@@ -83,6 +86,12 @@ export function LoginScreen() {
               <GoogleG size={18} />
               {busy ? 'Connecting…' : 'Continue with Google'}
             </button>
+
+            {error && (
+              <p role="alert" style={{ margin: '12px 0 0', color: '#c0432f', fontSize: 13, fontWeight: 500, lineHeight: 1.45 }}>
+                {error}
+              </p>
+            )}
 
             <p style={{ margin: '20px 0 0', color: '#9b9788', fontSize: 11.5, lineHeight: 1.5 }}>
               We use Google only to verify it's you — your name, email, and avatar.

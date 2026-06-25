@@ -81,12 +81,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile: session?.user ? profileFromUser(session.user) : null,
       signInWithGoogle: async () => {
         if (!supabase) return
-        await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           // Come back to wherever the app is served (localhost in dev, the
           // Vercel domain in prod) so the same client works in every env.
           options: { redirectTo: window.location.origin },
         })
+        // signInWithOAuth resolves with { error } instead of rejecting; surface
+        // it so the caller can stop its loading state and show a message.
+        if (error) throw error
       },
       signOut: async () => {
         if (!supabase) return
