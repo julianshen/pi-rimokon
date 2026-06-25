@@ -1,9 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useAuth, type OAuthProvider } from '../hooks/useAuth'
-import { GitHubIcon, GoogleG, PiMark } from './icons'
+import { GitHubIcon, PiMark } from './icons'
 
 const PROVIDERS: ReadonlyArray<{ id: OAuthProvider; label: string; icon: ReactNode }> = [
-  { id: 'google', label: 'Continue with Google', icon: <GoogleG size={18} /> },
   { id: 'github', label: 'Continue with GitHub', icon: <GitHubIcon size={18} /> },
 ]
 
@@ -107,7 +106,7 @@ export function LoginScreen() {
             )}
 
             <p style={{ margin: '20px 0 0', color: '#9b9788', fontSize: 11.5, lineHeight: 1.5 }}>
-              We use Google or GitHub only to verify it's you — your name, email, and avatar.
+              We use GitHub only to verify it's you — your name, email, and avatar.
             </p>
           </>
         )}

@@ -20,11 +20,11 @@ npm run preview    # serve the production build
 > Without Supabase env vars the app boots to a "Sign-in isn't configured yet"
 > notice instead of crashing — fill them in to enable sign-in.
 
-## Authentication (Google + GitHub sign-in)
+## Authentication (GitHub sign-in)
 
-The whole app is gated behind **Sign in with Google or GitHub**, implemented with
-[Supabase Auth](https://supabase.com/auth). Supabase brokers both OAuth flows, so
-the client only needs two public values, supplied via Vite env vars:
+The whole app is gated behind **Sign in with GitHub**, implemented with
+[Supabase Auth](https://supabase.com/auth). Supabase brokers the GitHub OAuth
+flow, so the client only needs two public values, supplied via Vite env vars:
 
 | Variable                 | Where to find it                                    |
 | ------------------------ | --------------------------------------------------- |
@@ -37,32 +37,21 @@ browser), so they're safe to expose client-side.
 ### One-time setup
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com). Its
-   OAuth callback is `https://<your-project-ref>.supabase.co/auth/v1/callback` —
-   both providers below point at it.
-2. **Google** — in the
-   [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
-   *Create Credentials → OAuth client ID → Web application*; add the Supabase
-   callback under **Authorized redirect URIs**. Then in Supabase →
-   *Authentication → Providers → Google*, paste the **Client ID** + **Client
-   secret** and enable it.
-3. **GitHub** — in GitHub → *Settings → Developer settings → OAuth Apps → New
-   OAuth App*; set **Authorization callback URL** to the same Supabase callback.
-   Then in Supabase → *Authentication → Providers → GitHub*, paste the **Client
-   ID** + **Client secret** and enable it.
-4. **Set the allowed app URLs** in Supabase → *Authentication → URL
+   OAuth callback is `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+2. **Create a GitHub OAuth App** — in GitHub → *Settings → Developer settings →
+   OAuth Apps → New OAuth App*; set **Authorization callback URL** to the
+   Supabase callback above. Then in Supabase → *Authentication → Providers →
+   GitHub*, paste the **Client ID** + **Client secret** and enable it.
+3. **Set the allowed app URLs** in Supabase → *Authentication → URL
    Configuration*:
    - **Site URL**: `https://pi-rimokon.vercel.app`
    - **Redirect URLs**: add `http://localhost:5173` (dev),
      `https://pi-rimokon.vercel.app` (prod), and — for Vercel preview deploys —
      `https://*.vercel.app`.
-5. **Local dev**: `cp .env.example .env.local` and fill in the two values.
-6. **Vercel**: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under
+4. **Local dev**: `cp .env.example .env.local` and fill in the two values.
+5. **Vercel**: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under
    *Project → Settings → Environment Variables*, then redeploy (Vite inlines env
    vars at build time, so a rebuild is required after changing them).
-
-> Enable only the providers you've configured — a button for an unconfigured
-> provider will error on click. Both are independent, so Google-only or
-> GitHub-only setups work too.
 
 Sign-in redirects back to `window.location.origin`, so the same setup works in
 dev and on every deployment with no per-environment code. Sessions persist
@@ -82,11 +71,12 @@ src/
     Avatar.tsx             provider picture with an initials fallback
 ```
 
-Adding another Supabase-supported provider is two lines: a new entry in the
-`OAuthProvider` union (`useAuth.tsx`) and one in the `PROVIDERS` list
-(`LoginScreen.tsx`). `main.tsx` wraps `<App/>` in `<AuthProvider><AuthGate>…`.
-Auth is independent of the `PiService` seam, so swapping the mock transport for a
-real Pi backend doesn't touch sign-in.
+The sign-in flow is provider-driven, so adding another Supabase-supported
+provider (e.g. Google) is two lines: a new entry in the `OAuthProvider` union
+(`useAuth.tsx`) and one in the `PROVIDERS` list (`LoginScreen.tsx`). `main.tsx`
+wraps `<App/>` in `<AuthProvider><AuthGate>…`. Auth is independent of the
+`PiService` seam, so swapping the mock transport for a real Pi backend doesn't
+touch sign-in.
 
 ## What's here
 

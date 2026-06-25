@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-// Round profile avatar: shows the Google picture when available, falling back to
+// Round profile avatar: shows the account picture when available, falling back to
 // the user's initials on a warm tile (also used if the image fails to load).
 export function Avatar({ url, initials, size = 32 }: { url: string | null; initials: string; size?: number }) {
   const [broken, setBroken] = useState(false)

@@ -1,4 +1,4 @@
-// Auth state for the app — wraps Supabase Google OAuth behind a small context so
+// Auth state for the app — wraps Supabase OAuth behind a small context so
 // any component can read the signed-in user or trigger sign-in / sign-out without
 // threading props. The whole app is gated on this (see AuthGate).
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
@@ -8,9 +8,9 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 export type AuthStatus = 'loading' | 'signed-in' | 'signed-out' | 'unconfigured'
 
 /** OAuth providers wired up for sign-in (all brokered by Supabase). */
-export type OAuthProvider = 'google' | 'github'
+export type OAuthProvider = 'github'
 
-/** A view-friendly identity derived from the Google profile Supabase returns. */
+/** A view-friendly identity derived from the provider profile Supabase returns. */
 export interface Profile {
   name: string
   email: string

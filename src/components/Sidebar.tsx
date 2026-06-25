@@ -111,7 +111,7 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
         })}
       </div>
 
-      {/* Profile footer — the signed-in Google account, with sign-out. */}
+      {/* Profile footer — the signed-in account, with sign-out. */}
       <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid #e2ded3', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={32} />
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>

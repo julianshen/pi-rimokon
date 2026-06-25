@@ -31,7 +31,7 @@ export function SettingsScreen() {
                 {profile?.name ?? 'Account'}
               </div>
               <div style={{ fontSize: 13, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {profile?.email ?? 'Signed in with Google'}
+                {profile?.email ?? 'Signed in with GitHub'}
               </div>
             </div>
             <button
