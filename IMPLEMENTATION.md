@@ -18,13 +18,13 @@ npm run preview    # serve the production build
 > Fonts (Hanken Grotesk + JetBrains Mono) load from Google Fonts at runtime.
 
 > Without Supabase env vars the app boots to a "Sign-in isn't configured yet"
-> notice instead of crashing — fill them in to enable Google sign-in.
+> notice instead of crashing — fill them in to enable sign-in.
 
-## Authentication (Google sign-in)
+## Authentication (Google + GitHub sign-in)
 
-The whole app is gated behind **Sign in with Google**, implemented with
-[Supabase Auth](https://supabase.com/auth). Supabase brokers the Google OAuth
-flow, so the client only needs two public values, supplied via Vite env vars:
+The whole app is gated behind **Sign in with Google or GitHub**, implemented with
+[Supabase Auth](https://supabase.com/auth). Supabase brokers both OAuth flows, so
+the client only needs two public values, supplied via Vite env vars:
 
 | Variable                 | Where to find it                                    |
 | ------------------------ | --------------------------------------------------- |
@@ -36,14 +36,19 @@ browser), so they're safe to expose client-side.
 
 ### One-time setup
 
-1. **Create a Supabase project** at [supabase.com](https://supabase.com).
-2. **Create Google OAuth credentials** in the
-   [Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
-   *Create Credentials → OAuth client ID → Web application*. Under **Authorized
-   redirect URIs** add your Supabase callback:
-   `https://<your-project-ref>.supabase.co/auth/v1/callback`
-3. **Enable Google in Supabase** → *Authentication → Providers → Google*: paste
-   the Google **Client ID** and **Client secret**, and save.
+1. **Create a Supabase project** at [supabase.com](https://supabase.com). Its
+   OAuth callback is `https://<your-project-ref>.supabase.co/auth/v1/callback` —
+   both providers below point at it.
+2. **Google** — in the
+   [Google Cloud Console](https://console.cloud.google.com/apis/credentials),
+   *Create Credentials → OAuth client ID → Web application*; add the Supabase
+   callback under **Authorized redirect URIs**. Then in Supabase →
+   *Authentication → Providers → Google*, paste the **Client ID** + **Client
+   secret** and enable it.
+3. **GitHub** — in GitHub → *Settings → Developer settings → OAuth Apps → New
+   OAuth App*; set **Authorization callback URL** to the same Supabase callback.
+   Then in Supabase → *Authentication → Providers → GitHub*, paste the **Client
+   ID** + **Client secret** and enable it.
 4. **Set the allowed app URLs** in Supabase → *Authentication → URL
    Configuration*:
    - **Site URL**: `https://pi-rimokon.vercel.app`
@@ -55,6 +60,10 @@ browser), so they're safe to expose client-side.
    *Project → Settings → Environment Variables*, then redeploy (Vite inlines env
    vars at build time, so a rebuild is required after changing them).
 
+> Enable only the providers you've configured — a button for an unconfigured
+> provider will error on click. Both are independent, so Google-only or
+> GitHub-only setups work too.
+
 Sign-in redirects back to `window.location.origin`, so the same setup works in
 dev and on every deployment with no per-environment code. Sessions persist
 across reloads; sign-out lives in the sidebar footer, the mobile nav drawer, and
@@ -65,16 +74,19 @@ across reloads; sign-out lives in the sidebar footer, the mobile nav drawer, and
 ```
 src/
   lib/supabase.ts          the Supabase client (null + a notice if env is unset)
-  hooks/useAuth.tsx        AuthProvider + useAuth() — session, profile, sign in/out
+  hooks/useAuth.tsx        AuthProvider + useAuth() — session, profile,
+                           signInWith(provider), signOut
   components/
     AuthGate.tsx           splash while loading → LoginScreen when out → app when in
-    LoginScreen.tsx        the gate: "Continue with Google" + unconfigured notice
-    Avatar.tsx             Google picture with an initials fallback
+    LoginScreen.tsx        the gate: a button per provider + unconfigured notice
+    Avatar.tsx             provider picture with an initials fallback
 ```
 
-`main.tsx` wraps `<App/>` in `<AuthProvider><AuthGate>…`. Auth is independent of
-the `PiService` seam, so swapping the mock transport for a real Pi backend
-doesn't touch sign-in.
+Adding another Supabase-supported provider is two lines: a new entry in the
+`OAuthProvider` union (`useAuth.tsx`) and one in the `PROVIDERS` list
+(`LoginScreen.tsx`). `main.tsx` wraps `<App/>` in `<AuthProvider><AuthGate>…`.
+Auth is independent of the `PiService` seam, so swapping the mock transport for a
+real Pi backend doesn't touch sign-in.
 
 ## What's here
 

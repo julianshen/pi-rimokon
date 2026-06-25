@@ -7,6 +7,9 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export type AuthStatus = 'loading' | 'signed-in' | 'signed-out' | 'unconfigured'
 
+/** OAuth providers wired up for sign-in (all brokered by Supabase). */
+export type OAuthProvider = 'google' | 'github'
+
 /** A view-friendly identity derived from the Google profile Supabase returns. */
 export interface Profile {
   name: string
@@ -19,7 +22,7 @@ interface AuthValue {
   status: AuthStatus
   user: User | null
   profile: Profile | null
-  signInWithGoogle: () => Promise<void>
+  signInWith: (provider: OAuthProvider) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -79,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       user: session?.user ?? null,
       profile: session?.user ? profileFromUser(session.user) : null,
-      signInWithGoogle: async () => {
+      signInWith: async (provider) => {
         if (!supabase) return
         const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
+          provider,
           // Come back to wherever the app is served (localhost in dev, the
           // Vercel domain in prod) so the same client works in every env.
           options: { redirectTo: window.location.origin },

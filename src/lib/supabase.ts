@@ -1,4 +1,4 @@
-// Supabase client — the auth transport for Google sign-in.
+// Supabase client — the auth transport for Google / GitHub sign-in.
 //
 // Both values are public: the URL identifies the project and the anon key is a
 // publishable, RLS-gated key meant to ship in the browser. They come from

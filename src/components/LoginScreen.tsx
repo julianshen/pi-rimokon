@@ -1,25 +1,30 @@
-import { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { GoogleG, PiMark } from './icons'
+import { useState, type ReactNode } from 'react'
+import { useAuth, type OAuthProvider } from '../hooks/useAuth'
+import { GitHubIcon, GoogleG, PiMark } from './icons'
+
+const PROVIDERS: ReadonlyArray<{ id: OAuthProvider; label: string; icon: ReactNode }> = [
+  { id: 'google', label: 'Continue with Google', icon: <GoogleG size={18} /> },
+  { id: 'github', label: 'Continue with GitHub', icon: <GitHubIcon size={18} /> },
+]
 
 // The auth gate. Rendered full-screen whenever no one is signed in, so the app
-// (sidebar, sessions, everything) stays behind Google sign-in.
+// (sidebar, sessions, everything) stays behind sign-in.
 export function LoginScreen() {
-  const { status, signInWithGoogle } = useAuth()
-  const [busy, setBusy] = useState(false)
+  const { status, signInWith } = useAuth()
+  const [busy, setBusy] = useState<OAuthProvider | null>(null)
   const [error, setError] = useState<string | null>(null)
   const unconfigured = status === 'unconfigured'
 
-  const onSignIn = async () => {
-    setBusy(true)
+  const onSignIn = async (provider: OAuthProvider) => {
+    setBusy(provider)
     setError(null)
     try {
-      // On success this navigates away to Google, so `busy` simply stays true
+      // On success this navigates away to the provider, so `busy` stays set
       // until the redirect happens; we only reset it on failure.
-      await signInWithGoogle()
+      await signInWith(provider)
     } catch (err) {
-      setBusy(false)
-      setError(err instanceof Error ? err.message : 'Could not start Google sign-in. Please try again.')
+      setBusy(null)
+      setError(err instanceof Error ? err.message : 'Could not start sign-in. Please try again.')
     }
   }
 
@@ -61,31 +66,39 @@ export function LoginScreen() {
           <ConfigNotice />
         ) : (
           <>
-            <button
-              className="pi-hover-border"
-              onClick={onSignIn}
-              disabled={busy}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 11,
-                padding: '12px 14px',
-                border: '1px solid #ddd8ca',
-                borderRadius: 11,
-                background: '#fff',
-                color: '#1b1b1d',
-                fontSize: 14.5,
-                fontWeight: 600,
-                cursor: busy ? 'default' : 'pointer',
-                opacity: busy ? 0.7 : 1,
-                transition: 'border-color .15s ease',
-              }}
-            >
-              <GoogleG size={18} />
-              {busy ? 'Connecting…' : 'Continue with Google'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {PROVIDERS.map((p) => {
+                const connecting = busy === p.id
+                return (
+                  <button
+                    key={p.id}
+                    className="pi-hover-border"
+                    onClick={() => onSignIn(p.id)}
+                    disabled={busy !== null}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 11,
+                      padding: '12px 14px',
+                      border: '1px solid #ddd8ca',
+                      borderRadius: 11,
+                      background: '#fff',
+                      color: '#1b1b1d',
+                      fontSize: 14.5,
+                      fontWeight: 600,
+                      cursor: busy ? 'default' : 'pointer',
+                      opacity: busy === null ? 1 : connecting ? 0.7 : 0.55,
+                      transition: 'border-color .15s ease',
+                    }}
+                  >
+                    {p.icon}
+                    {connecting ? 'Connecting…' : p.label}
+                  </button>
+                )
+              })}
+            </div>
 
             {error && (
               <p role="alert" style={{ margin: '12px 0 0', color: '#c0432f', fontSize: 13, fontWeight: 500, lineHeight: 1.45 }}>
@@ -94,7 +107,7 @@ export function LoginScreen() {
             )}
 
             <p style={{ margin: '20px 0 0', color: '#9b9788', fontSize: 11.5, lineHeight: 1.5 }}>
-              We use Google only to verify it's you — your name, email, and avatar.
+              We use Google or GitHub only to verify it's you — your name, email, and avatar.
             </p>
           </>
         )}
@@ -133,7 +146,7 @@ function ConfigNotice() {
         <br />
         VITE_SUPABASE_ANON_KEY
       </div>
-      <div style={{ marginTop: 8, color: '#9b9788', fontSize: 12 }}>See the README for the full Supabase + Google setup.</div>
+      <div style={{ marginTop: 8, color: '#9b9788', fontSize: 12 }}>See the README for the full Supabase auth setup.</div>
     </div>
   )
 }

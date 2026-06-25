@@ -3,8 +3,8 @@ import { useAuth } from '../hooks/useAuth'
 import { LoginScreen } from './LoginScreen'
 import { PiMark } from './icons'
 
-// Gates the whole app on Google sign-in: a brief splash while the session is
-// resolved, the login screen when signed out (or unconfigured), the app once in.
+// Gates the whole app on sign-in: a brief splash while the session is resolved,
+// the login screen when signed out (or unconfigured), the app once in.
 export function AuthGate({ children }: { children: ReactNode }) {
   const { status } = useAuth()
 
