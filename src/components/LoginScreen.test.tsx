@@ -56,8 +56,11 @@ describe('LoginScreen (unconfigured)', () => {
   it('renders the not-configured notice with the required env var names', () => {
     renderLogin()
     expect(screen.getByText(/Sign-in isn't configured yet/i)).toBeInTheDocument()
-    expect(screen.getByText('VITE_SUPABASE_URL')).toBeInTheDocument()
-    expect(screen.getByText('VITE_SUPABASE_ANON_KEY')).toBeInTheDocument()
+    // Both var names live in one <div> split by a <br>, so assert on text content.
+    const code = screen.getByText((_, el) => el?.tagName === 'DIV' && el.textContent === 'VITE_SUPABASE_URLVITE_SUPABASE_ANON_KEY')
+    expect(code).toBeInTheDocument()
+    expect(code.textContent).toContain('VITE_SUPABASE_URL')
+    expect(code.textContent).toContain('VITE_SUPABASE_ANON_KEY')
     // the GitHub sign-in button is not reachable when unconfigured
     expect(screen.queryByRole('button', { name: /Continue with GitHub/i })).not.toBeInTheDocument()
   })

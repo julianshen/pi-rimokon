@@ -189,6 +189,50 @@ describe('buildThreadView', () => {
     }
   })
 
+  it('handles a user message with no text and an agent message with no tools key', () => {
+    const sess: Session = {
+      ...byId('s1'),
+      live: true,
+      thread: [
+        // user message with text undefined -> falls back to ''
+        { role: 'user' },
+        // streaming agent with no tools array and no text
+        { role: 'agent', streaming: true, intro: 'hi' },
+      ],
+    }
+    const view = buildThreadView(sess, 0)
+    const user = view.items[0]
+    expect(user.kind).toBe('user')
+    if (user.kind === 'user') expect(user.text).toBe('')
+    const agent = view.items[1]
+    if (agent.kind === 'agent') {
+      expect(agent.tools).toEqual([])
+      expect(agent.text).toBe('')
+    }
+  })
+
+  it('labels an unknown running tool kind with just its path (no verb)', () => {
+    const sess: Session = {
+      ...byId('s1'),
+      live: true,
+      thread: [
+        { role: 'user', text: 'go' },
+        {
+          role: 'agent',
+          streaming: true,
+          intro: 'hi',
+          // unknown kind -> TOOL_META[kind] is undefined in the workingLabel branch
+          // @ts-expect-error intentional unknown kind
+          tools: [{ kind: 'mystery', path: 'weird/op' }],
+          text: 'a b c d',
+        },
+      ],
+    }
+    // step 0 -> first (unknown) tool is the running one; workingLabel omits the verb
+    const view = buildThreadView(sess, 0)
+    expect(view.workingLabel).toBe('weird/op')
+  })
+
   it('falls back to the read tool meta for an unknown tool kind', () => {
     const sess: Session = {
       ...byId('s4'),

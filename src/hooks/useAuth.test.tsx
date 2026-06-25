@@ -142,6 +142,52 @@ describe('useAuth — configured', () => {
     expect(result.current.profile?.initials).toBe('SU')
   })
 
+  it('uses metadata email and name fallbacks when the user has no top-level email', async () => {
+    mock.configured = true
+    mock.getSessionResult = {
+      data: {
+        session: {
+          user: {
+            // no top-level email -> falls back to meta.email
+            user_metadata: { email: 'ops@team.dev', name: 'Ops Team' },
+          },
+        },
+      },
+    }
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.status).toBe('signed-in'))
+    expect(result.current.profile?.email).toBe('ops@team.dev')
+    // name comes from meta.name; initials from the two words -> "OT"
+    expect(result.current.profile?.name).toBe('Ops Team')
+    expect(result.current.profile?.initials).toBe('OT')
+  })
+
+  it('defaults the name to "Account" and derives initials when nothing identifies the user', async () => {
+    mock.configured = true
+    mock.getSessionResult = {
+      data: { session: { user: { user_metadata: {} } } },
+    }
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.status).toBe('signed-in'))
+    expect(result.current.profile?.email).toBe('')
+    // name -> 'Account' (no email/full_name/name); single-token source -> first 2 letters
+    expect(result.current.profile?.name).toBe('Account')
+    expect(result.current.profile?.initials).toBe('AC')
+    expect(result.current.profile?.avatarUrl).toBeNull()
+  })
+
+  it('handles a user object with no user_metadata at all', async () => {
+    mock.configured = true
+    mock.getSessionResult = {
+      data: { session: { user: { email: 'solo@x.io' } } },
+    }
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.status).toBe('signed-in'))
+    // name falls back to the email local-part 'solo'; single token -> 'SO'
+    expect(result.current.profile?.name).toBe('solo')
+    expect(result.current.profile?.initials).toBe('SO')
+  })
+
   it('updates state when the auth-change subscription fires (sign-in then sign-out)', async () => {
     mock.configured = true
     mock.getSessionResult = { data: { session: null } }

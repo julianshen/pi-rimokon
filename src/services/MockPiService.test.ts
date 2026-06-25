@@ -2,10 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { MockPiService } from './MockPiService'
 import { SEED_SESSIONS } from '../data/seedSessions'
 
+// The seed list is a shared mutable singleton handed out by MockPiService;
+// several tests below mutate it (stopRun, sendMessage, pickOption). Restore a
+// pristine copy before each test so order can't leak state between cases.
+const PRISTINE_SEEDS = structuredClone(SEED_SESSIONS)
+function restoreSeeds() {
+  SEED_SESSIONS.splice(0, SEED_SESSIONS.length, ...structuredClone(PRISTINE_SEEDS))
+}
+
 describe('MockPiService', () => {
   let svc: MockPiService
 
   beforeEach(() => {
+    restoreSeeds()
     svc = new MockPiService()
   })
 

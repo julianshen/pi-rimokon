@@ -3,6 +3,16 @@ import { act, renderHook } from '@testing-library/react'
 import { useAppStore } from './useAppStore'
 import { streamMax } from '../lib/sessionView'
 import { MockPiService } from '../services/MockPiService'
+import { SEED_SESSIONS } from '../data/seedSessions'
+
+// SEED_SESSIONS is a shared, mutable module singleton: MockPiService hands out
+// references to these objects, and actions like stopRun/sendMessage mutate them
+// in place. Snapshot a pristine copy and restore it before every test so the
+// seeds (e.g. s1.live) stay deterministic regardless of test order.
+const PRISTINE_SEEDS = structuredClone(SEED_SESSIONS)
+function restoreSeeds() {
+  SEED_SESSIONS.splice(0, SEED_SESSIONS.length, ...structuredClone(PRISTINE_SEEDS))
+}
 
 function setViewport(width: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, configurable: true, writable: true })
@@ -16,6 +26,7 @@ function renderStore() {
 
 describe('useAppStore', () => {
   beforeEach(() => {
+    restoreSeeds()
     setViewport(1280)
   })
 
