@@ -45,7 +45,9 @@ describe('ComposeScreen', () => {
   })
 
   it('shows the repo dropdown options when repoMenu is open', () => {
-    renderCompose({ repoMenu: true })
+    // Use a current repo that is NOT one of the menu options, so each option
+    // button is unambiguous (the trigger also renders the current repo label).
+    renderCompose({ repoMenu: true, composeRepo: 'acme/other-repo' })
     expect(screen.getByRole('button', { name: 'acme/web-app' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'acme/payments-api' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'acme/mobile' })).toBeInTheDocument()

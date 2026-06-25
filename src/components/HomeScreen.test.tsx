@@ -70,7 +70,7 @@ describe('HomeScreen', () => {
     // No card titles from the seed data are present.
     expect(screen.queryByText('Add rate limiting to login endpoint')).not.toBeInTheDocument()
     // The "All" filter count is zero.
-    expect(screen.getByRole('button', { name: /All/ })).toHaveTextContent('0')
+    expect(screen.getByRole('button', { name: /^All0$/ })).toBeInTheDocument()
   })
 
   it('renders cards even for a status missing from the filter bar (error)', () => {

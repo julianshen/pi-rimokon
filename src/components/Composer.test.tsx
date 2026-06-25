@@ -75,14 +75,10 @@ describe('Composer', () => {
 
   it('fires onRemoveQueued with the chip index when its close button is clicked', async () => {
     const user = userEvent.setup()
-    const props = renderComposer({ queued: ['Task A', 'Task B'] })
-    // Each chip has a single (icon-only) button — its remove control.
-    const removeButtons = screen.getAllByRole('button')
-    // The chip remove buttons precede the segmented + send controls; click the
-    // one belonging to "Task B" by locating it relative to the chip text.
-    const chipB = screen.getByText('Task B').closest('span')!
-    const removeB = chipB.querySelector('button')!
-    expect(removeButtons).toContain(removeB)
+    const props = renderComposer({ working: false, queued: ['Task A', 'Task B'] })
+    // With no working banner, DOM button order is: [removeA, removeB, Steer,
+    // Follow-up, Send]. The second button removes the chip at index 1 ("Task B").
+    const removeB = screen.getAllByRole('button')[1]
     await user.click(removeB)
     expect(props.onRemoveQueued).toHaveBeenCalledWith(1)
   })
