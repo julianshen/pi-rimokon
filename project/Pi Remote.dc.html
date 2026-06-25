@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body { font-family:'Hanken Grotesk', system-ui, sans-serif; background:#f4f2ec; color:#1b1b1d; -webkit-font-smoothing:antialiased; }
+  ::selection { background:#cfe6d8; }
+  textarea, input, button { font-family:inherit; }
+  textarea:focus, input:focus { outline:none; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:#d8d4c9; border-radius:8px; border:3px solid transparent; background-clip:content-box; }
+  ::-webkit-scrollbar-thumb:hover { background:#c4bfb0; background-clip:content-box; }
+  @keyframes pi-pulse { 0%,100%{ opacity:1; transform:scale(1);} 50%{ opacity:.35; transform:scale(.78);} }
+  @keyframes pi-blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+  @keyframes pi-spin { to { transform:rotate(360deg);} }
+  @keyframes pi-bob { 0%,100%{opacity:.25;} 50%{opacity:1;} }
+  @keyframes pi-slide { from{ transform:translateX(28px); opacity:0;} to{ transform:translateX(0); opacity:1;} }
+  @keyframes pi-rise { from{ transform:translateY(8px); opacity:0;} to{ transform:translateY(0); opacity:1;} }
+</style>
+</helmet>
+
+<div style="display:flex; height:100vh; width:100%; overflow:hidden; background:#f4f2ec;">
+
+  <!-- ===== DESKTOP SIDEBAR ===== -->
+  <sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ true }}">
+  <aside style="width:268px; flex:none; height:100%; display:flex; flex-direction:column; background:#efece4; border-right:1px solid #e2ded3;">
+    <div style="padding:18px 18px 12px; display:flex; align-items:center; gap:10px;">
+      <div style="width:30px; height:30px; border-radius:8px; background:#1b1b1d; display:flex; align-items:center; justify-content:center; flex:none;">
+        <span style="font-family:'JetBrains Mono',monospace; color:#f4f2ec; font-size:18px; font-weight:600; line-height:1; margin-top:-1px;">π</span>
+      </div>
+      <div style="display:flex; flex-direction:column; line-height:1.05;">
+        <span style="font-size:15px; font-weight:700; letter-spacing:-.01em;">Pi Remote</span>
+        
+      </div>
+    </div>
+
+    <div style="height:6px;"></div>
+
+    <nav style="padding:2px 10px 8px; display:flex; flex-direction:column; gap:1px;">
+      <button onClick="{{ goHome }}" style="{{ navHomeStyle }}" style-hover="background:#e6e2d6;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+        Sessions
+      </button>
+      <button onClick="{{ goSettings }}" style="{{ navSettingsStyle }}" style-hover="background:#e6e2d6;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Settings
+      </button>
+    </nav>
+
+    <div style="padding:14px 18px 6px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; color:#9b9788; text-transform:uppercase;">Active sessions</div>
+    <div style="flex:1; overflow-y:auto; padding:2px 10px 12px; display:flex; flex-direction:column; gap:1px;">
+      <sc-for list="{{ navSessions }}" as="n" hint-placeholder-count="5">
+        <button onClick="{{ n.open }}" style="{{ n.rowStyle }}" style-hover="background:#e6e2d6;">
+          <span style="position:relative; width:8px; height:8px; flex:none; display:inline-flex; align-items:center; justify-content:center;">
+            <span style="{{ n.dotStyle }}"></span>
+          </span>
+          <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:500;">{{ n.title }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="margin-top:auto; padding:12px 14px; border-top:1px solid #e2ded3; display:flex; align-items:center; gap:10px;">
+      <div style="width:32px; height:32px; border-radius:50%; background:#cdc8ba; color:#5c594f; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none;">EM</div>
+      <div style="display:flex; flex-direction:column; line-height:1.15; min-width:0; flex:1;">
+        <span style="font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Earendil Mort</span>
+        
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9b9788" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+  </aside>
+  </sc-if>
+
+  <!-- ===== MAIN COLUMN ===== -->
+  <main style="flex:1; min-width:0; height:100%; display:flex; flex-direction:column; position:relative; overflow:hidden;">
+
+    <!-- mobile top bar -->
+    <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid #e2ded3; background:#efece4; flex:none;">
+      <button onClick="{{ toggleMobileNav }}" style="width:36px; height:36px; border:1px solid #e2ded3; border-radius:9px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b1b1d" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
+      </button>
+      <div style="width:26px; height:26px; border-radius:7px; background:#1b1b1d; display:flex; align-items:center; justify-content:center;"><span style="font-family:'JetBrains Mono',monospace; color:#f4f2ec; font-size:15px; font-weight:600; margin-top:-1px;">π</span></div>
+      <span style="font-size:15px; font-weight:700;">Pi Remote</span>
+      <div style="flex:1;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ============ HOME ============ -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1; overflow-y:auto;">
+      <div style="max-width:1080px; margin:0 auto; padding:34px 32px 80px;">
+        <div style="display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:200px;">
+            <h1 style="margin:0; font-size:27px; font-weight:700; letter-spacing:-.02em;">Sessions</h1>
+            <p style="margin:6px 0 0; color:#76736b; font-size:14.5px;">{{ activeCountLabel }}</p>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; margin:22px 0 20px; flex-wrap:wrap;">
+          <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+            <button onClick="{{ f.set }}" style="{{ f.style }}" style-hover="border-color:#c4bfb0;">{{ f.label }}<span style="opacity:.55; margin-left:6px; font-family:'JetBrains Mono',monospace; font-size:11px;">{{ f.count }}</span></button>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:14px;">
+          <sc-for list="{{ homeCards }}" as="c" hint-placeholder-count="6">
+            <button onClick="{{ c.open }}" style="text-align:left; cursor:pointer; background:#fff; border:1px solid #e6e2d6; border-radius:14px; padding:16px 16px 14px; display:flex; flex-direction:column; gap:12px;" style-hover="border-color:#cfc9ba; box-shadow:0 6px 20px rgba(40,36,28,.07); transform:translateY(-1px);">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="{{ c.pillStyle }}"><span style="{{ c.dotStyle }}"></span>{{ c.statusLabel }}</span>
+                <div style="flex:1;"></div>
+                <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#9b9788;">{{ c.time }}</span>
+              </div>
+              <div style="font-size:15.5px; font-weight:650; line-height:1.3; letter-spacing:-.01em;">{{ c.title }}</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#76736b; display:flex; align-items:center; gap:6px; min-width:0;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none;"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.repo }} · {{ c.branch }}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; color:#5c594f; font-size:13px; border-top:1px solid #f0ede4; padding-top:11px;">
+                <span style="{{ c.miniDotStyle }}"></span>
+                <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.latest }}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px; font-family:'JetBrains Mono',monospace; font-size:11px;">
+                <span style="display:inline-flex; align-items:center; gap:5px; color:#8a8678;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>{{ c.model }}</span>
+                <div style="flex:1;"></div>
+                <sc-if value="{{ c.hasChanges }}" hint-placeholder-val="{{ false }}">
+                  <span style="color:#1f8a5b;">{{ c.add }}</span><span style="color:#b23a28; margin-left:-6px;">{{ c.del }}</span>
+                </sc-if>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ SESSION ============ -->
+    <sc-if value="{{ isSession }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+      <!-- session header -->
+      <div style="flex:none; display:flex; align-items:center; gap:12px; padding:13px 20px; border-bottom:1px solid #e6e2d6; background:rgba(244,242,236,.85); backdrop-filter:blur(6px);">
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ goHome }}" style="width:32px;height:32px;border:1px solid #e2ded3;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1b1b1d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+        </sc-if>
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="{{ sessPillStyle }}"><span style="{{ sessDotStyle }}"></span>{{ sessStatusLabel }}</span>
+            <h2 style="margin:0; font-size:15.5px; font-weight:650; letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ sessTitle }}</h2>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8678; margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ sessRepo }} · {{ sessBranch }}</div>
+        </div>
+
+        <!-- model selector -->
+        <div style="position:relative; flex:none;">
+          <button onClick="{{ toggleModelMenu }}" style="display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid #e2ded3; border-radius:9px; background:#fff; cursor:pointer; font-size:12.5px; font-weight:600;" style-hover="border-color:#c4bfb0;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1f8a5b" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            <span style="display:none-mobile;">{{ currentModel }}</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a8678" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <sc-if value="{{ modelMenu }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; top:42px; right:0; width:248px; background:#fff; border:1px solid #e2ded3; border-radius:12px; box-shadow:0 14px 40px rgba(40,36,28,.16); padding:6px; z-index:40; animation:pi-rise .14s ease;">
+            <div style="padding:7px 10px 4px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#9b9788;">Switch model · ⌃L</div>
+            <sc-for list="{{ models }}" as="m" hint-placeholder-count="4">
+              <button onClick="{{ m.pick }}" style="{{ m.style }}" style-hover="background:#f4f2ec;">
+                <span style="{{ m.checkStyle }}"></span>
+                <span style="flex:1; min-width:0;"><span style="font-size:13px; font-weight:600; display:block;">{{ m.label }}</span><span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9b9788;">{{ m.provider }}</span></span>
+              </button>
+            </sc-for>
+          </div>
+          </sc-if>
+        </div>
+
+        <button onClick="{{ toggleTree }}" title="Session tree" style="width:34px; height:34px; flex:none; border:1px solid #e2ded3; border-radius:9px; background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="border-color:#c4bfb0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"></circle><circle cx="6" cy="18" r="2.4"></circle><circle cx="18" cy="12" r="2.4"></circle><path d="M6 8.4v7.2M8.4 6h4.8a3 3 0 0 1 3 3v.6M8.4 18h4.8a3 3 0 0 0 3-3v-.6"></path></svg>
+        </button>
+        <button onClick="{{ toggleRight }}" title="Work panel" style="{{ rightBtnStyle }}" style-hover="border-color:#c4bfb0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M15 4v16"></path></svg>
+        </button>
+      </div>
+
+      <!-- conversation -->
+      <div style="flex:1; overflow-y:auto;" data-screen-label="Live session">
+        <div style="max-width:756px; margin:0 auto; padding:26px 22px 30px; display:flex; flex-direction:column; gap:22px;">
+          <sc-for list="{{ thread }}" as="m" hint-placeholder-count="3">
+
+            <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <div style="width:28px; height:28px; border-radius:50%; background:#cdc8ba; color:#5c594f; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; margin-top:1px;">DV</div>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;"><span style="font-size:13px; font-weight:700;">You</span><sc-if value="{{ m.steer }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase; color:#b9772a; background:#f6ecdb; padding:2px 6px; border-radius:5px;">↵ steered</span></sc-if></div>
+                <div style="background:#fff; border:1px solid #e6e2d6; border-radius:12px; padding:11px 14px; font-size:14.5px; line-height:1.55; color:#33312c;">{{ m.text }}</div>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ m.isAgent }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+              <div style="width:28px; height:28px; border-radius:8px; background:#1b1b1d; display:flex; align-items:center; justify-content:center; flex:none; margin-top:1px;"><span style="font-family:'JetBrains Mono',monospace; color:#f4f2ec; font-size:15px; font-weight:600; margin-top:-1px;">π</span></div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:13px; font-weight:700; margin-bottom:7px;">Pi</div>
+
+                <sc-if value="{{ m.intro }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:14.5px; line-height:1.6; color:#33312c; margin-bottom:12px;">{{ m.intro }}</div>
+                </sc-if>
+
+                <!-- tool calls -->
+                <sc-if value="{{ m.hasTools }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:13px;">
+                  <sc-for list="{{ m.tools }}" as="t" hint-placeholder-count="3">
+                    <div style="{{ t.cardStyle }}">
+                      <div style="display:flex; align-items:center; gap:9px; padding:9px 11px;">
+                        <span style="{{ t.iconWrapStyle }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.icon }}"></path></svg></span>
+                        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:#5c594f;">{{ t.verb }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#33312c; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;">{{ t.path }}</span>
+                        <sc-if value="{{ t.running }}" hint-placeholder-val="{{ false }}">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#b9772a" stroke-width="2.4" stroke-linecap="round" style="animation:pi-spin .8s linear infinite; flex:none;"><path d="M12 3a9 9 0 1 0 9 9"></path></svg>
+                        </sc-if>
+                        <sc-if value="{{ t.done }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8678; flex:none;">{{ t.meta }}</span>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ t.hasDiff }}" hint-placeholder-val="{{ false }}">
+                      <div style="border-top:1px solid #f0ede4; padding:7px 0; background:#fbfaf6; border-radius:0 0 10px 10px; overflow-x:auto;">
+                        <sc-for list="{{ t.diff }}" as="d" hint-placeholder-count="3">
+                          <div style="font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.7; padding:0 12px; white-space:pre; background:{{ d.bg }}; color:{{ d.fg }};"><span style="opacity:.5; user-select:none;">{{ d.sign }} </span>{{ d.code }}</div>
+                        </sc-for>
+                      </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+
+                <!-- generative UI -->
+                <sc-if value="{{ m.hasGenUI }}" hint-placeholder-val="{{ false }}">
+                <div style="margin:2px 0 14px; border:1px solid #e2ded3; border-radius:13px; overflow:hidden; background:#fff;">
+                  <div style="display:flex; align-items:center; gap:9px; padding:9px 13px; border-bottom:1px solid #f0ede4; background:#faf8f2;">
+                    <span style="display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:#7a5bd6; font-weight:600;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.4 6.6L22 12l-6.6 2.4L13 21l-2.4-6.6L4 12l6.6-2.4z"></path></svg>
+                      Generative UI
+                    </span>
+                    <span style="font-size:12.5px; font-weight:650; color:#33312c;">{{ m.genui.title }}</span>
+                    <div style="flex:1;"></div>
+                    <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9b9788;">{{ m.genui.tag }}</span>
+                  </div>
+
+                  <sc-if value="{{ m.genui.isChart }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:16px 16px 13px;">
+                    <div style="display:flex; align-items:flex-end; gap:9px; border-bottom:1px solid #ece9e1; padding-bottom:6px;">
+                      <sc-for list="{{ m.genui.bars }}" as="b" hint-placeholder-count="8">
+                        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px;">
+                          <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:600; color:{{ b.valColor }};">{{ b.val }}</span>
+                          <div style="width:100%; height:104px; display:flex; align-items:flex-end;">
+                            <div style="{{ b.barStyle }}"></div>
+                          </div>
+                          <span style="font-family:'JetBrains Mono',monospace; font-size:9px; color:#9b9788;">{{ b.label }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:11px;">
+                      <span style="width:9px; height:9px; border-radius:2px; background:#c0432f; flex:none;"></span>
+                      <span style="font-size:12px; color:#76736b;">{{ m.genui.note }}</span>
+                    </div>
+                  </div>
+                  </sc-if>
+
+                  <sc-if value="{{ m.genui.isPreview }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:16px;">
+                    <div style="{{ m.genui.paneStyle }}">
+                      <div style="{{ m.genui.headingStyle }}">Settings</div>
+                      <div style="{{ m.genui.sectionLabelStyle }}">Appearance</div>
+                      <div style="{{ m.genui.rowStyle }}">
+                        <div style="flex:1; min-width:0;">
+                          <div style="font-size:13.5px; font-weight:600;">Dark mode</div>
+                          <div style="{{ m.genui.subStyle }}">Match system preference on first load</div>
+                        </div>
+                        <button onClick="{{ m.genui.toggleTheme }}" style="{{ m.genui.trackStyle }}"><span style="{{ m.genui.knobStyle }}"></span></button>
+                      </div>
+                      <div style="{{ m.genui.row2Style }}">
+                        <div style="flex:1; min-width:0;">
+                          <div style="font-size:13.5px; font-weight:600;">Reduce motion</div>
+                          <div style="{{ m.genui.subStyle }}">Disable non-essential animations</div>
+                        </div>
+                        <div style="{{ m.genui.trackOffStyle }}"><span style="{{ m.genui.knobOffStyle }}"></span></div>
+                      </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:11px;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9b9788" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 18l6-6-6-6"></path></svg>
+                      <span style="font-size:11.5px; color:#9b9788;">Interactive — rendered live by Pi at remote. Toggle to try it.</span>
+                    </div>
+                  </div>
+                  </sc-if>
+                </div>
+                </sc-if>
+
+                <sc-if value="{{ m.hasText }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:14.5px; line-height:1.62; color:#33312c;">{{ m.text }}<sc-if value="{{ m.cursor }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block; width:8px; height:16px; background:#1f8a5b; margin-left:2px; vertical-align:-2px; animation:pi-blink 1s step-end infinite;"></span></sc-if></div>
+                </sc-if>
+
+                <sc-if value="{{ m.question }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:13px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <sc-for list="{{ m.options }}" as="o" hint-placeholder-count="2">
+                      <button onClick="{{ o.pick }}" style="padding:8px 13px; border:1px solid #d8d4c9; border-radius:9px; background:#fff; font-size:13px; font-weight:600; cursor:pointer; color:#33312c;" style-hover="border-color:#7a5bd6; background:#f6f3fd;">{{ o.label }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <!-- review CTA after finish -->
+                <sc-if value="{{ m.reviewCTA }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:15px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:13px 14px; background:#e6f2eb; border:1px solid #bfe0cc; border-radius:12px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f8a5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M20 6 9 17l-5-5"></path></svg>
+                  <span style="font-size:13.5px; font-weight:600; color:#1c5c3e; flex:1; min-width:120px;">{{ m.reviewLabel }}</span>
+                  <button onClick="{{ goReview }}" style="padding:8px 14px; border:none; border-radius:9px; background:#1f8a5b; color:#fff; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#1a7850;">Review changes</button>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+            </sc-if>
+
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- composer -->
+      <div style="flex:none; padding:0 22px 16px;">
+        <div style="max-width:756px; margin:0 auto;">
+
+          <sc-if value="{{ working }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; gap:10px; padding:9px 14px; margin-bottom:9px; background:#1b1b1d; border-radius:11px; color:#f4f2ec; animation:pi-rise .2s ease;">
+            <span style="display:inline-flex; gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#9fe3bd;animation:pi-bob 1s infinite;"></span><span style="width:5px;height:5px;border-radius:50%;background:#9fe3bd;animation:pi-bob 1s .2s infinite;"></span><span style="width:5px;height:5px;border-radius:50%;background:#9fe3bd;animation:pi-bob 1s .4s infinite;"></span></span>
+            <span style="font-size:13px; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ workingLabel }}</span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#9b9788;">↵ to steer</span>
+            <button onClick="{{ stopRun }}" style="padding:5px 10px; border:1px solid #3a3a3d; border-radius:7px; background:transparent; color:#f4f2ec; font-size:11.5px; font-weight:600; cursor:pointer; font-family:'JetBrains Mono',monospace;" style-hover="background:#2a2a2d;">Stop</button>
+          </div>
+          </sc-if>
+
+          <sc-if value="{{ hasQueued }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-wrap:wrap; gap:7px; margin-bottom:9px;">
+            <sc-for list="{{ queued }}" as="q" hint-placeholder-count="1">
+              <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 8px 6px 11px; background:#f6ecdb; border:1px solid #e7d3ad; border-radius:9px; font-size:12.5px; color:#7a5417; max-width:340px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;"><path d="M12 2v6M12 2L9 5M12 2l3 3"></path><path d="M5 12h14a2 2 0 0 1 2 2v6H3v-6a2 2 0 0 1 2-2Z"></path></svg>
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ q.text }}</span>
+                <button onClick="{{ q.remove }}" style="border:none; background:transparent; cursor:pointer; color:#a98a4e; display:flex; padding:0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+              </span>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <div style="background:#fff; border:1px solid #d8d4c9; border-radius:14px; padding:12px 14px 10px; box-shadow:0 2px 12px rgba(40,36,28,.05);">
+            <textarea value="{{ composer }}" onInput="{{ setComposer }}" onKeyDown="{{ onComposerKey }}" placeholder="{{ composerPlaceholder }}" rows="1" style="width:100%; border:none; resize:none; font-size:14.5px; line-height:1.55; color:#1b1b1d; background:transparent; min-height:24px; max-height:160px;"></textarea>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+              <div style="display:inline-flex; background:#f0ede4; border-radius:9px; padding:2px;">
+                <button onClick="{{ setSteer }}" style="{{ segSteerStyle }}">Steer</button>
+                <button onClick="{{ setFollow }}" style="{{ segFollowStyle }}">Follow-up</button>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9b9788;">{{ composerHint }}</span>
+              <div style="flex:1;"></div>
+              <button onClick="{{ send }}" style="{{ sendBtnStyle }}" style-hover="opacity:.88;">
+                {{ sendLabel }}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ REVIEW ============ -->
+    <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; display:flex; flex-direction:column; min-height:0;" data-screen-label="Code review">
+      <div style="flex:none; display:flex; align-items:center; gap:12px; padding:13px 20px; border-bottom:1px solid #e6e2d6;">
+        <button onClick="{{ backToSession }}" style="display:flex; align-items:center; gap:6px; padding:7px 11px; border:1px solid #e2ded3; border-radius:9px; background:#fff; cursor:pointer; font-size:13px; font-weight:600;" style-hover="border-color:#c4bfb0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Session</button>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:15px; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ sessTitle }}</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8a8678; margin-top:2px;">{{ sessBranch }} → main · {{ reviewSummary }}</div>
+        </div>
+        <button style="padding:8px 13px; border:1px solid #e2ded3; border-radius:9px; background:#fff; font-size:13px; font-weight:600; cursor:pointer; color:#b23a28;" style-hover="border-color:#e0b3a8; background:#fbf0ec;">Request changes</button>
+        <button style="display:flex; align-items:center; gap:7px; padding:8px 14px; border:none; border-radius:9px; background:#1f8a5b; color:#fff; font-size:13px; font-weight:600; cursor:pointer;" style-hover="background:#1a7850;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Approve &amp; merge</button>
+      </div>
+      <div style="flex:1; display:flex; min-height:0;">
+        <div style="width:280px; flex:none; border-right:1px solid #e6e2d6; overflow-y:auto; padding:14px 10px; background:#faf8f2;">
+          <div style="padding:4px 10px 10px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#9b9788;">Changed files</div>
+          <sc-for list="{{ changes }}" as="c" hint-placeholder-count="2">
+            <button onClick="{{ c.open }}" style="{{ c.rowStyle }}" style-hover="background:#f0ede4;">
+              <span style="{{ c.badgeStyle }}">{{ c.status }}</span>
+              <span style="flex:1; min-width:0; font-family:'JetBrains Mono',monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left;">{{ c.path }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#1f8a5b; flex:none;">{{ c.addLabel }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#b23a28; flex:none;">{{ c.delLabel }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="flex:1; min-width:0; overflow-y:auto; background:#fff;">
+          <div style="position:sticky; top:0; background:#fbfaf6; border-bottom:1px solid #e6e2d6; padding:11px 18px; font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600; color:#33312c;">{{ activeDiffPath }}</div>
+          <div style="padding:6px 0 40px;">
+            <sc-for list="{{ activeDiff }}" as="d" hint-placeholder-count="8">
+              <div style="display:flex; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.85; background:{{ d.bg }};">
+                <span style="width:46px; flex:none; text-align:right; padding-right:12px; color:#bdb9ac; user-select:none;">{{ d.ln }}</span>
+                <span style="flex:1; white-space:pre; padding-right:18px; color:{{ d.fg }};"><span style="opacity:.55; user-select:none;">{{ d.sign }} </span>{{ d.code }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ COMPOSE ============ -->
+    <sc-if value="{{ isCompose }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; overflow-y:auto;" data-screen-label="New session">
+      <div style="max-width:680px; margin:0 auto; padding:48px 24px 80px;">
+        <div style="text-align:center; margin-bottom:30px;">
+          <div style="width:48px; height:48px; border-radius:13px; background:#1b1b1d; display:inline-flex; align-items:center; justify-content:center; margin-bottom:16px;"><span style="font-family:'JetBrains Mono',monospace; color:#f4f2ec; font-size:27px; font-weight:600; margin-top:-2px;">π</span></div>
+          <h1 style="margin:0; font-size:25px; font-weight:700; letter-spacing:-.02em;">Start a new session</h1>
+          <p style="margin:8px 0 0; color:#76736b; font-size:14.5px;">A live Pi instance spins up at remote in a fresh worktree and reports back when it's ready for review.</p>
+        </div>
+
+        <div style="background:#fff; border:1px solid #e6e2d6; border-radius:16px; padding:8px; box-shadow:0 4px 20px rgba(40,36,28,.05);">
+          <div style="display:flex; gap:8px; padding:10px 10px 0; flex-wrap:wrap;">
+            <div style="position:relative; flex:1; min-width:180px;">
+              <button onClick="{{ toggleRepoMenu }}" style="width:100%; display:flex; align-items:center; gap:8px; padding:9px 11px; border:1px solid #e2ded3; border-radius:10px; background:#faf8f2; cursor:pointer; font-size:13px; font-weight:600;" style-hover="border-color:#c4bfb0;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="1.8"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                <span style="flex:1; min-width:0; text-align:left; font-family:'JetBrains Mono',monospace; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ composeRepo }}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8a8678" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+              </button>
+              <sc-if value="{{ repoMenu }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; top:46px; left:0; right:0; background:#fff; border:1px solid #e2ded3; border-radius:11px; box-shadow:0 12px 36px rgba(40,36,28,.15); padding:5px; z-index:30;">
+                <sc-for list="{{ repoOptions }}" as="r" hint-placeholder-count="3">
+                  <button onClick="{{ r.pick }}" style="width:100%; text-align:left; padding:8px 10px; border:none; border-radius:8px; background:transparent; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#33312c;" style-hover="background:#f4f2ec;">{{ r.name }}</button>
+                </sc-for>
+              </div>
+              </sc-if>
+            </div>
+            <div style="display:flex; align-items:center; gap:7px; padding:9px 11px; border:1px solid #e2ded3; border-radius:10px; background:#faf8f2; font-family:'JetBrains Mono',monospace; font-size:12.5px; color:#76736b;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="1.8"><path d="M6 3v12"></path><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg>
+              base: main
+            </div>
+          </div>
+
+          <textarea value="{{ composeText }}" onInput="{{ setComposeText }}" placeholder="Describe the task — e.g. “Add optimistic updates to the cart and handle rollback on failure.”" rows="4" style="width:100%; border:none; resize:none; font-size:15px; line-height:1.6; color:#1b1b1d; background:transparent; padding:14px 12px; min-height:96px;"></textarea>
+
+          <div style="display:flex; align-items:center; gap:8px; padding:0 10px 10px; flex-wrap:wrap;">
+            <span style="font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9b9788; margin-right:2px;">SKILLS</span>
+            <sc-for list="{{ skills }}" as="s" hint-placeholder-count="3">
+              <button onClick="{{ s.toggle }}" style="{{ s.style }}">{{ s.label }}</button>
+            </sc-for>
+            <div style="flex:1;"></div>
+            <button onClick="{{ startTask }}" style="display:flex; align-items:center; gap:8px; padding:10px 16px; border:none; border-radius:10px; background:#1b1b1d; color:#f4f2ec; font-size:13.5px; font-weight:600; cursor:pointer;" style-hover="background:#000;">
+              Start session
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-top:26px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#9b9788; margin-bottom:10px;">Try one of these</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <sc-for list="{{ examples }}" as="e" hint-placeholder-count="3">
+              <button onClick="{{ e.use }}" style="text-align:left; display:flex; align-items:center; gap:11px; padding:13px 14px; border:1px solid #e6e2d6; border-radius:11px; background:#fff; cursor:pointer; font-size:14px; color:#33312c;" style-hover="border-color:#cfc9ba; background:#fbfaf6;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b9772a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="m13 2-3 9h5l-3 9"></path></svg>
+                <span style="flex:1;">{{ e.text }}</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#bdb9ac" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ SETTINGS ============ -->
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; overflow-y:auto;" data-screen-label="Settings">
+      <div style="max-width:760px; margin:0 auto; padding:34px 28px 80px;">
+        <h1 style="margin:0 0 4px; font-size:25px; font-weight:700; letter-spacing:-.02em;">Settings</h1>
+        <p style="margin:0 0 28px; color:#76736b; font-size:14.5px;">Adapt Pi to your workflow — connect repos, manage providers, set defaults.</p>
+
+        <div style="background:#fff; border:1px solid #e6e2d6; border-radius:14px; overflow:hidden; margin-bottom:20px;">
+          <div style="padding:15px 18px; border-bottom:1px solid #f0ede4; display:flex; align-items:center; gap:10px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1b1b1d" stroke-width="1.9"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+            <span style="font-size:15px; font-weight:650; flex:1;">Connected agents<br></span>
+          </div>
+          <sc-for list="{{ repoSettings }}" as="r" hint-placeholder-count="3">
+            <div style="padding:13px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #f4f2ec;">
+              <div style="width:30px; height:30px; border-radius:8px; background:#f0ede4; display:flex; align-items:center; justify-content:center; flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="1.8"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg></div>
+              <div style="flex:1; min-width:0;">
+                <div style="font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;">{{ r.name }}</div>
+                <div style="font-size:12px; color:#9b9788;">{{ r.meta }}</div>
+              </div>
+              <span style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:#1f8a5b; font-weight:600;"><span style="width:7px;height:7px;border-radius:50%;background:#1f8a5b;"></span>Connected</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#fff; border:1px solid #e6e2d6; border-radius:14px; overflow:hidden; margin-bottom:20px;">
+          
+          <sc-for list="{{ providerSettings }}" as="p" hint-placeholder-count="3">
+            
+          </sc-for>
+        </div>
+
+      </div>
+    </div>
+    </sc-if>
+
+  </main>
+
+  <!-- ===== WORK PANEL (slide-over) ===== -->
+  <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ toggleRight }}" style="position:fixed; inset:0; background:rgba(27,27,29,.18); z-index:50;"></div>
+  <aside style="position:fixed; top:0; right:0; bottom:0; width:min(460px, 94vw); background:#fff; border-left:1px solid #e2ded3; z-index:51; display:flex; flex-direction:column; box-shadow:-16px 0 50px rgba(40,36,28,.14); animation:pi-slide .22s cubic-bezier(.2,.8,.2,1);">
+    <div style="flex:none; display:flex; align-items:center; gap:4px; padding:12px 14px; border-bottom:1px solid #e6e2d6;">
+      <sc-for list="{{ rightTabs }}" as="tab" hint-placeholder-count="3">
+        <button onClick="{{ tab.set }}" style="{{ tab.style }}">{{ tab.label }}</button>
+      </sc-for>
+      <div style="flex:1;"></div>
+      <button onClick="{{ toggleRight }}" style="width:30px; height:30px; border:none; border-radius:8px; background:#f4f2ec; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:#e6e2d6;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+    </div>
+
+    <sc-if value="{{ rtFiles }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1; overflow-y:auto; padding:10px;">
+      <sc-for list="{{ changes }}" as="c" hint-placeholder-count="2">
+        <button onClick="{{ c.open }}" style="width:100%; text-align:left; display:flex; align-items:center; gap:10px; padding:10px 11px; border:none; border-radius:9px; background:transparent; cursor:pointer;" style-hover="background:#f4f2ec;">
+          <span style="{{ c.badgeStyle }}">{{ c.status }}</span>
+          <span style="flex:1; min-width:0; font-family:'JetBrains Mono',monospace; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ c.path }}</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#1f8a5b;">{{ c.addLabel }}</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#b23a28;">{{ c.delLabel }}</span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ noChanges }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:30px 16px; text-align:center; color:#9b9788; font-size:13px;">No file changes yet.</div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ rtDiff }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; overflow:auto; background:#fbfaf6;">
+      <div style="position:sticky; top:0; background:#fbfaf6; border-bottom:1px solid #e6e2d6; padding:10px 14px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600;">{{ activeDiffPath }}</div>
+      <sc-for list="{{ activeDiff }}" as="d" hint-placeholder-count="8">
+        <div style="display:flex; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.8; background:{{ d.bg }};">
+          <span style="width:40px; flex:none; text-align:right; padding-right:10px; color:#bdb9ac; user-select:none;">{{ d.ln }}</span>
+          <span style="flex:1; white-space:pre; padding-right:14px; color:{{ d.fg }};"><span style="opacity:.5;">{{ d.sign }} </span>{{ d.code }}</span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ rtTerminal }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1; overflow:auto; background:#1b1b1d; padding:14px 16px;">
+      <sc-for list="{{ terminalLines }}" as="t" hint-placeholder-count="6">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.75; color:{{ t.color }}; white-space:pre-wrap;">{{ t.line }}</div>
+      </sc-for>
+    </div>
+    </sc-if>
+  </aside>
+  </sc-if>
+
+  <!-- ===== SESSION TREE (slide-over) ===== -->
+  <sc-if value="{{ treeOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ toggleTree }}" style="position:fixed; inset:0; background:rgba(27,27,29,.18); z-index:50;"></div>
+  <aside style="position:fixed; top:0; right:0; bottom:0; width:min(420px, 94vw); background:#faf8f2; border-left:1px solid #e2ded3; z-index:51; display:flex; flex-direction:column; box-shadow:-16px 0 50px rgba(40,36,28,.14); animation:pi-slide .22s cubic-bezier(.2,.8,.2,1);">
+    <div style="flex:none; display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid #e6e2d6;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1b1b1d" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"></circle><circle cx="6" cy="18" r="2.4"></circle><circle cx="18" cy="12" r="2.4"></circle><path d="M6 8.4v7.2M8.4 6h4.8a3 3 0 0 1 3 3v.6M8.4 18h4.8a3 3 0 0 0 3-3v-.6"></path></svg>
+      <span style="font-size:15px; font-weight:650; flex:1;">Session tree</span>
+      <button style="display:flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e2ded3; border-radius:8px; background:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:'JetBrains Mono',monospace;" style-hover="border-color:#c4bfb0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path><path d="M16 6l-4-4-4 4M12 2v13"></path></svg>/share</button>
+      <button onClick="{{ toggleTree }}" style="width:30px; height:30px; border:none; border-radius:8px; background:#f0ede4; display:flex; align-items:center; justify-content:center; cursor:pointer;" style-hover="background:#e6e2d6;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c594f" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:16px 18px;">
+      <sc-for list="{{ treeNodes }}" as="n" hint-placeholder-count="5">
+        <div style="display:flex; gap:11px; align-items:flex-start; position:relative;">
+          <div style="display:flex; flex-direction:column; align-items:center; flex:none; width:18px; padding-left:{{ n.indent }};">
+            <span style="{{ n.nodeStyle }}"></span>
+            <sc-if value="{{ n.connector }}" hint-placeholder-val="{{ true }}"><span style="width:2px; flex:1; min-height:26px; background:#dcd7ca;"></span></sc-if>
+          </div>
+          <div style="flex:1; min-width:0; padding-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:7px;">
+              <span style="font-size:13.5px; font-weight:600; color:{{ n.titleColor }};">{{ n.label }}</span>
+              <sc-if value="{{ n.bookmark }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="#b9772a" stroke="none"><path d="M6 3h12v18l-6-4-6 4z"></path></svg></sc-if>
+              <sc-if value="{{ n.current }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:#1f8a5b; background:#e6f2eb; padding:2px 6px; border-radius:5px;">current</span></sc-if>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#9b9788; margin-top:2px;">{{ n.meta }}</div>
+            <sc-if value="{{ n.canRewind }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ n.rewind }}" style="margin-top:7px; display:inline-flex; align-items:center; gap:5px; padding:5px 9px; border:1px solid #e2ded3; border-radius:7px; background:#fff; font-size:11.5px; font-weight:600; cursor:pointer; color:#5c594f;" style-hover="border-color:#7a5bd6; color:#7a5bd6;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-1"></path></svg>Rewind &amp; branch here</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </aside>
+  </sc-if>
+
+  <!-- ===== MOBILE NAV DRAWER ===== -->
+  <sc-if value="{{ mobileNav }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ toggleMobileNav }}" style="position:fixed; inset:0; background:rgba(27,27,29,.3); z-index:60;"></div>
+  <aside style="position:fixed; top:0; left:0; bottom:0; width:280px; background:#efece4; z-index:61; display:flex; flex-direction:column; box-shadow:16px 0 50px rgba(40,36,28,.18); animation:pi-slide .2s ease;">
+    <div style="padding:16px 16px 10px;">
+      <button onClick="{{ goHome }}" style="width:100%; text-align:left; padding:11px 13px; border:none; border-radius:10px; background:transparent; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:#e6e2d6;">Sessions</button>
+      <button onClick="{{ goSettings }}" style="width:100%; text-align:left; padding:11px 13px; border:none; border-radius:10px; background:transparent; font-size:14px; font-weight:600; cursor:pointer;" style-hover="background:#e6e2d6;">Settings</button>
+    </div>
+    <div style="padding:6px 16px 8px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#9b9788;">Active sessions</div>
+    <div style="flex:1; overflow-y:auto; padding:0 10px;">
+      <sc-for list="{{ navSessions }}" as="n" hint-placeholder-count="5">
+        <button onClick="{{ n.open }}" style="width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:11px 12px; border:none; border-radius:9px; background:transparent; cursor:pointer;" style-hover="background:#e6e2d6;">
+          <span style="{{ n.dotStyle }}"></span>
+          <span style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13.5px; font-weight:500;">{{ n.title }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </aside>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100%&quot;}}">
+class Component extends DCLogic {
+  state = {
+    route: 'home', activeId: 's1', step: 0,
+    rightOpen: false, rightTab: 'files', diffIndex: 0,
+    treeOpen: false, modelMenu: false, repoMenu: false, mobileNav: false,
+    composer: '', sendMode: 'steer', queued: [],
+    homeFilter: 'all', vw: 1280,
+    composeText: '', composeRepo: 'acme/web-app', skills: { tests: true, lint: false, docs: false },
+    model: 'sonnet',
+  };
+
+  ICONS = {
+    file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6',
+    search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z M21 21l-4.3-4.3',
+    pencil: 'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z',
+    create: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 11v6 M9 14h6',
+    terminal: 'M4 17l6-6-6-6 M12 19h8',
+    check: 'M20 6 9 17l-5-5',
+  };
+  TM = {
+    read:   { icon: 'file',     verb: 'Read',   c: '#76736b' },
+    search: { icon: 'search',   verb: 'Search', c: '#76736b' },
+    edit:   { icon: 'pencil',   verb: 'Edit',   c: '#2f6db0' },
+    create: { icon: 'create',   verb: 'Create', c: '#1f8a5b' },
+    bash:   { icon: 'terminal', verb: 'Run',    c: '#33312c' },
+    test:   { icon: 'check',    verb: 'Test',   c: '#1f8a5b' },
+  };
+  MODELS = [
+    { id: 'sonnet', label: 'Claude Sonnet 4.5', provider: 'Anthropic' },
+    { id: 'gpt5',   label: 'GPT-5',             provider: 'OpenAI' },
+    { id: 'gemini', label: 'Gemini 2.5 Pro',    provider: 'Google' },
+    { id: 'kimi',   label: 'Kimi K2',           provider: 'Moonshot · OAuth' },
+    { id: 'qwen',   label: 'Qwen3 Coder',       provider: 'Local · Ollama' },
+  ];
+  ST = {
+    working: { key: 'working', label: 'Working', color: '#b9772a', bg: '#f6ecdb', pulse: true },
+    review:  { key: 'review',  label: 'Needs review', color: '#2f6db0', bg: '#e7eef7', pulse: false },
+    waiting: { key: 'waiting', label: 'Waiting on you', color: '#7a5bd6', bg: '#efeafb', pulse: true },
+    done:    { key: 'done',    label: 'Done', color: '#1f8a5b', bg: '#e6f2eb', pulse: false },
+    error:   { key: 'error',   label: 'Failed', color: '#c0432f', bg: '#f7e7e3', pulse: false },
+  };
+
+  sessions = {
+    s1: {
+      id: 's1', title: 'Add rate limiting to login endpoint', repo: 'acme/payments-api', branch: 'pi/rate-limit-login',
+      status: 'working', model: 'sonnet', latest: 'Creating src/middleware/rateLimit.ts', time: 'now',
+      add: 72, del: 2, live: true,
+      thread: [
+        { role: 'user', text: 'Add rate limiting to the API login endpoint. Return 429 with a Retry-After header after 5 failed attempts in 15 minutes, keyed by IP.' },
+        { role: 'agent', streaming: true,
+          intro: "I'll add a token-bucket limiter and wire it into the login router. Let me see how routing and middleware are set up first.",
+          tools: [
+            { kind: 'read', path: 'src/auth/login.ts', meta: '84 lines' },
+            { kind: 'search', path: '"rate limit" · "throttle"', meta: '0 matches' },
+            { kind: 'create', path: 'src/middleware/rateLimit.ts', meta: '+63', diff: [
+              { t: '+', c: 'export function rateLimit(opts: RateLimitOpts) {' },
+              { t: '+', c: '  const hits = new Map<string, number[]>()' },
+              { t: '+', c: '  return (req, res, next) => {' },
+              { t: '+', c: "    const ip = req.ip ?? 'unknown'" },
+              { t: '+', c: '    /* …sliding-window check… */' },
+              { t: '+', c: '  }' },
+              { t: '+', c: '}' },
+            ] },
+            { kind: 'edit', path: 'src/auth/login.ts', meta: '+9 −2', diff: [
+              { t: ' ', c: "import { Router } from 'express'" },
+              { t: '+', c: "import { rateLimit } from '../middleware/rateLimit'" },
+              { t: '+', c: 'router.use(rateLimit({ max: 5, windowMs: 9e5 }))' },
+              { t: '-', c: "router.post('/login', handler)" },
+              { t: '+', c: "router.post('/login', handler) // limited" },
+            ] },
+            { kind: 'bash', path: 'npm test -- auth', meta: '12 passed' },
+          ],
+          text: 'Done. I added a token-bucket limiter in src/middleware/rateLimit.ts (5 attempts per 15 minutes, keyed by IP) and wired it into the login router. On limit it responds 429 with a Retry-After header for the remaining window. All 12 auth tests pass — two files changed and ready for review.',
+        },
+      ],
+      changes: [
+        { path: 'src/middleware/rateLimit.ts', status: 'A', add: 63, del: 0, diff: [
+          { t: '@', c: '@@ new file @@' },
+          { t: '+', c: "import type { Request, Response, NextFunction } from 'express'" },
+          { t: '+', c: '' },
+          { t: '+', c: 'interface RateLimitOpts { max: number; windowMs: number }' },
+          { t: '+', c: '' },
+          { t: '+', c: 'export function rateLimit(opts: RateLimitOpts) {' },
+          { t: '+', c: '  const hits = new Map<string, number[]>()' },
+          { t: '+', c: '  return (req: Request, res: Response, next: NextFunction) => {' },
+          { t: '+', c: "    const ip = req.ip ?? 'unknown'" },
+          { t: '+', c: '    const now = Date.now()' },
+          { t: '+', c: '    const win = (hits.get(ip) ?? []).filter(t => now - t < opts.windowMs)' },
+          { t: '+', c: '    if (win.length >= opts.max) {' },
+          { t: '+', c: "      res.setHeader('Retry-After', Math.ceil((opts.windowMs - (now - win[0])) / 1000))" },
+          { t: '+', c: "      return res.status(429).json({ error: 'too_many_requests' })" },
+          { t: '+', c: '    }' },
+          { t: '+', c: '    win.push(now); hits.set(ip, win)' },
+          { t: '+', c: '    next()' },
+          { t: '+', c: '  }' },
+          { t: '+', c: '}' },
+        ] },
+        { path: 'src/auth/login.ts', status: 'M', add: 9, del: 2, diff: [
+          { t: '@', c: '@@ -1,6 +1,8 @@' },
+          { t: ' ', c: "import { Router } from 'express'" },
+          { t: '+', c: "import { rateLimit } from '../middleware/rateLimit'" },
+          { t: ' ', c: '' },
+          { t: ' ', c: 'const router = Router()' },
+          { t: '+', c: '// 5 attempts / 15 min per IP' },
+          { t: '+', c: 'router.use(rateLimit({ max: 5, windowMs: 9e5 }))' },
+          { t: ' ', c: '' },
+          { t: '-', c: "router.post('/login', loginHandler)" },
+          { t: '-', c: 'export default router' },
+          { t: '+', c: "router.post('/login', loginHandler)" },
+          { t: '+', c: 'export default router' },
+        ] },
+      ],
+      terminal: [
+        '$ npm test -- auth', '',
+        'PASS  test/auth/login.test.ts',
+        '  ✓ allows 5 attempts (28 ms)',
+        '  ✓ blocks the 6th with 429 (6 ms)',
+        '  ✓ sets Retry-After header (4 ms)',
+        '  ✓ resets after the window (3 ms)', '',
+        'Tests:  12 passed, 12 total',
+        'Time:   1.84 s',
+      ],
+      tree: [
+        { label: 'Add rate limiting…', meta: 'initial request', node: 'root' },
+        { label: 'Explore routing & middleware', meta: 'read · search' },
+        { label: 'Approach A — Redis store', meta: 'branch · abandoned', branch: true, canRewind: true },
+        { label: 'Approach B — in-memory window', meta: 'create rateLimit.ts', bookmark: true },
+        { label: 'Wire into login router', meta: 'edit login.ts' },
+        { label: 'Run auth tests · 12 passed', meta: 'current', current: true },
+      ],
+    },
+    s2: {
+      id: 's2', title: 'Fix flaky checkout E2E test', repo: 'acme/web-app', branch: 'pi/fix-flaky-checkout',
+      status: 'review', model: 'gpt5', latest: 'Replaced fixed waits with explicit assertions', time: '8m',
+      add: 14, del: 11,
+      thread: [
+        { role: 'user', text: 'The checkout.spec.ts E2E test fails ~1 in 5 runs in CI. Find the race and fix it.' },
+        { role: 'agent',
+          intro: 'The flake comes from a hard-coded 500ms wait before asserting the order total. I replaced the timeouts with explicit element/state assertions so it waits on the real condition.',
+          tools: [
+            { kind: 'read', path: 'e2e/checkout.spec.ts', meta: '142 lines' },
+            { kind: 'bash', path: 'playwright test checkout --repeat 20', meta: '4 failed' },
+            { kind: 'edit', path: 'e2e/checkout.spec.ts', meta: '+14 −11', diff: [
+              { t: '-', c: 'await page.waitForTimeout(500)' },
+              { t: '+', c: "await expect(page.getByTestId('order-total')).toBeVisible()" },
+            ] },
+            { kind: 'bash', path: 'playwright test checkout --repeat 50', meta: '50 passed' },
+          ],
+          text: 'Fixed. The race was a fixed 500ms wait that occasionally fired before the order total rendered. Swapped the three timeouts for explicit visibility/value assertions. Ran the spec 50× with zero failures.' },
+      ],
+      changes: [
+        { path: 'e2e/checkout.spec.ts', status: 'M', add: 14, del: 11, diff: [
+          { t: '@', c: '@@ -40,11 +40,14 @@ test(\'checkout total\', …)' },
+          { t: ' ', c: "await page.getByRole('button', { name: 'Pay' }).click()" },
+          { t: '-', c: 'await page.waitForTimeout(500)' },
+          { t: '-', c: "const total = await page.locator('.total').innerText()" },
+          { t: '-', c: "expect(total).toBe('$48.00')" },
+          { t: '+', c: "const total = page.getByTestId('order-total')" },
+          { t: '+', c: 'await expect(total).toBeVisible()' },
+          { t: '+', c: "await expect(total).toHaveText('$48.00')" },
+          { t: ' ', c: '' },
+          { t: '-', c: 'await page.waitForTimeout(500)' },
+          { t: '+', c: "await expect(page.getByText('Order confirmed')).toBeVisible()" },
+        ] },
+      ],
+      terminal: ['$ playwright test checkout --repeat 50', '', '  50 passed (1.2m)', '  0 flaky'],
+      tree: [
+        { label: 'Fix flaky checkout test', meta: 'initial request', node: 'root' },
+        { label: 'Reproduce with --repeat 20', meta: '4 failed' },
+        { label: 'Replace fixed waits', meta: 'edit checkout.spec.ts', bookmark: true },
+        { label: 'Verify · 50 passed', meta: 'current', current: true },
+      ],
+    },
+    s3: {
+      id: 's3', title: 'Migrate logging to structured JSON', repo: 'acme/payments-api', branch: 'pi/structured-logs',
+      status: 'working', model: 'sonnet', latest: 'Editing 14 of 31 call sites', time: '2m',
+      add: 120, del: 86,
+      thread: [
+        { role: 'user', text: 'Replace all console.log calls with our structured logger (pino). Keep log levels sensible.' },
+        { role: 'agent',
+          intro: 'Migrating call sites across the service. Working through them now — 14 of 31 done.',
+          tools: [
+            { kind: 'search', path: 'console.log · console.error', meta: '31 matches' },
+            { kind: 'edit', path: 'src/payments/charge.ts', meta: '+12 −9' },
+            { kind: 'edit', path: 'src/webhooks/handler.ts', meta: '+18 −14' },
+          ],
+          text: '' },
+      ],
+      changes: [{ path: 'src/payments/charge.ts', status: 'M', add: 12, del: 9, diff: [{ t: '-', c: "console.log('charged', id)" }, { t: '+', c: "log.info({ id }, 'charged')" }] }],
+      terminal: ['$ rg "console\\." src | wc -l', '31'],
+      tree: [{ label: 'Migrate logging', meta: 'initial request', node: 'root' }, { label: 'Find call sites', meta: '31 matches' }, { label: 'Rewriting…', meta: 'current', current: true }],
+    },
+    s4: {
+      id: 's4', title: 'Add dark mode toggle to settings', repo: 'acme/web-app', branch: 'pi/dark-mode',
+      status: 'done', model: 'gemini', latest: 'Merged into main · 6 files', time: '1h',
+      add: 0, del: 0,
+      thread: [
+        { role: 'user', text: 'Add a dark mode toggle in Settings that persists and respects prefers-color-scheme on first load.' },
+        { role: 'agent', intro: 'Shipped — added a theme context, a toggle in Settings, and a CSS variable theme. Merged after review.', tools: [{ kind: 'create', path: 'src/theme/ThemeProvider.tsx', meta: '+88' }, { kind: 'test', path: 'npm test -- theme', meta: '7 passed' }],
+          genui: { type: 'preview', title: 'Settings.tsx — live preview' },
+          text: 'Done and merged. The toggle persists to localStorage and falls back to the system preference on first load.' },
+      ],
+      changes: [], terminal: ['$ git merge --no-ff pi/dark-mode', 'Merged.'],
+      tree: [{ label: 'Add dark mode', meta: 'initial request', node: 'root' }, { label: 'Theme provider + toggle', meta: 'create', bookmark: true }, { label: 'Merged to main', meta: 'current', current: true }],
+    },
+    s5: {
+      id: 's5', title: 'Investigate checkout latency spike', repo: 'acme/payments-api', branch: 'pi/latency-probe',
+      status: 'waiting', model: 'sonnet', latest: 'Asked: which environment is affected?', time: '20m',
+      add: 0, del: 0,
+      thread: [
+        { role: 'user', text: 'Checkout p95 latency jumped ~3x since yesterday. Find out why.' },
+        { role: 'agent',
+          intro: 'I pulled the last 24h of traces. The spike lines up with a deploy at 14:10 UTC, and most of the added time is in the payment-provider call, not our code.',
+          tools: [{ kind: 'bash', path: 'pi traces --since 24h --p95', meta: 'analyzed' }, { kind: 'read', path: 'src/payments/provider.ts', meta: '210 lines' }],
+          genui: { type: 'chart', title: 'Checkout p95 latency — last 24h', unit: 'ms', note: 'Spike begins at the 14:10 UTC deploy.',
+            series: [
+              { t: '10:00', v: 218 }, { t: '12:00', v: 225 }, { t: '14:00', v: 221 },
+              { t: '14:10', v: 690, spike: true }, { t: '16:00', v: 705, spike: true },
+              { t: '18:00', v: 688, spike: true }, { t: '20:00', v: 679, spike: true }, { t: '22:00', v: 692, spike: true },
+            ] },
+          text: 'Before I change anything, I need a steer:',
+          question: true,
+          options: ['Only production is affected', 'Staging too', 'Roll back the 14:10 deploy first'] },
+      ],
+      changes: [], terminal: ['$ pi traces --since 24h --p95', 'p95 220ms → 690ms at 14:10 UTC'],
+      tree: [{ label: 'Investigate latency', meta: 'initial request', node: 'root' }, { label: 'Pull 24h traces', meta: 'analyzed' }, { label: 'Awaiting your input', meta: 'current', current: true }],
+    },
+    s6: {
+      id: 's6', title: 'Bump dependencies to latest', repo: 'acme/mobile', branch: 'pi/deps-bump',
+      status: 'error', model: 'qwen', latest: 'Build failed — react-native 0.76 peer conflict', time: '40m',
+      add: 0, del: 0,
+      thread: [
+        { role: 'user', text: 'Update all dependencies to their latest versions and make sure the app still builds.' },
+        { role: 'agent', intro: 'Bumped 38 packages, but the build is failing on a peer dependency conflict.', tools: [{ kind: 'bash', path: 'npm install', meta: 'done' }, { kind: 'bash', path: 'npm run build', meta: 'exit 1' }], text: 'react-native@0.76 requires react@>=18.3 but a transitive dep pins react@18.2. I can pin the resolution or hold react-native at 0.75 — want me to try one?' },
+      ],
+      changes: [], terminal: ['$ npm run build', '', 'ERR! peer react@"18.2.0" from react-native-gesture-handler', 'ERR! conflicting peer dependency'],
+      tree: [{ label: 'Bump dependencies', meta: 'initial request', node: 'root' }, { label: 'npm install · 38 bumped', meta: '' }, { label: 'Build failed', meta: 'current', current: true }],
+    },
+  };
+  created = [];
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ vw: window.innerWidth });
+    this.onResize();
+    window.addEventListener('resize', this.onResize);
+    this._t = setInterval(() => {
+      const s = this.state;
+      if (s.route !== 'session') return;
+      const sess = this.getSession(s.activeId);
+      if (!sess || !sess.live) return;
+      const max = this.streamMax(sess);
+      if (s.step >= max) return;
+      this.setState({ step: s.step + 1 });
+    }, 130);
+  }
+  componentWillUnmount() { clearInterval(this._t); window.removeEventListener('resize', this.onResize); }
+
+  getSession(id) { return this.created.find(x => x.id === id) || this.sessions[id]; }
+  allSessions() { return [...this.created, this.sessions.s1, this.sessions.s2, this.sessions.s3, this.sessions.s5, this.sessions.s4, this.sessions.s6]; }
+  statusOf(x) { return this.ST[x.status] || this.ST.working; }
+
+  buildGenUI(g, s) {
+    if (g.type === 'chart') {
+      const maxV = Math.max.apply(null, g.series.map(p => p.v));
+      return {
+        isChart: true, isPreview: false, title: g.title, tag: g.unit ? ('values in ' + g.unit) : '', note: g.note,
+        bars: g.series.map(p => ({
+          val: '' + p.v, valColor: p.spike ? '#c0432f' : '#5c594f',
+          label: p.t,
+          barStyle: `width:100%; height:${Math.max(7, Math.round(p.v / maxV * 100))}%; border-radius:4px 4px 0 0; background:${p.spike ? '#c0432f' : '#1b1b1d'}; transition:height .3s;`,
+        })),
+      };
+    }
+    if (g.type === 'preview') {
+      const dark = (s.genuiTheme || 'light') === 'dark';
+      const paneBg = dark ? '#15171c' : '#ffffff', fg = dark ? '#e9ebef' : '#1b1b1d',
+            sub = dark ? '#9097a3' : '#8a8678', border = dark ? '#272b34' : '#ece9e1',
+            rowBd = dark ? '#22262e' : '#f2efe7';
+      return {
+        isPreview: true, isChart: false, title: g.title, tag: dark ? 'theme: dark' : 'theme: light',
+        paneStyle: `border:1px solid ${border}; border-radius:12px; padding:15px 16px 5px; background:${paneBg}; color:${fg}; transition:background .25s, color .25s, border-color .25s;`,
+        headingStyle: `font-size:16px; font-weight:700; margin-bottom:12px; color:${fg};`,
+        sectionLabelStyle: `font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:${sub}; margin-bottom:2px;`,
+        rowStyle: `display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid ${rowBd};`,
+        row2Style: `display:flex; align-items:center; gap:12px; padding:11px 0;`,
+        subStyle: `font-size:11.5px; color:${sub}; margin-top:1px;`,
+        trackStyle: `width:42px; height:24px; border-radius:12px; border:none; cursor:pointer; padding:0; position:relative; flex:none; background:${dark ? '#1f8a5b' : '#cdc8ba'}; transition:background .25s;`,
+        knobStyle: `position:absolute; top:2px; left:${dark ? '20px' : '2px'}; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .25s; box-shadow:0 1px 2px rgba(0,0,0,.3);`,
+        trackOffStyle: `width:42px; height:24px; border-radius:12px; position:relative; flex:none; background:${dark ? '#2a2e37' : '#e2ded3'};`,
+        knobOffStyle: `position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:${dark ? '#5c6270' : '#fff'};`,
+        toggleTheme: () => this.setState({ genuiTheme: dark ? 'light' : 'dark' }),
+      };
+    }
+    return null;
+  }
+  modelLabel(id) { const m = this.MODELS.find(m => m.id === id); return m ? m.label.replace('Claude ', '') : id; }
+
+  streamMax(sess) { const msg = sess.thread[sess.thread.length - 1]; const tools = (msg.tools || []).length; const words = (msg.text || '').split(' ').length; return tools * 5 + Math.ceil(words / 2) + 3; }
+
+  openSession(id) {
+    const sess = this.getSession(id);
+    this.setState({ route: 'session', activeId: id, step: 0, treeOpen: false, modelMenu: false, mobileNav: false, diffIndex: 0, rightOpen: false, queued: [], composer: '' });
+    if (sess && sess.live) this.setState({ step: 0 });
+  }
+  go(route) { this.setState({ route, mobileNav: false, modelMenu: false, repoMenu: false }); }
+
+  doSend(mode) {
+    const text = this.state.composer.trim(); if (!text) return;
+    const sess = this.getSession(this.state.activeId); if (!sess) return;
+    if (mode === 'follow') { this.setState(s => ({ queued: [...s.queued, text], composer: '' })); return; }
+    const steering = sess.live && this.state.step < this.streamMax(sess);
+    sess.thread.push({ role: 'user', text, steer: steering });
+    this.setState({ composer: '' });
+    setTimeout(() => { sess.thread.push({ role: 'agent', intro: steering ? 'Got it — folding that into the current run.' : 'On it.', tools: [], text: '' }); this.forceUpdate(); }, 850);
+  }
+
+  startTask() {
+    const text = this.state.composeText.trim() || 'Implement the requested change';
+    const id = 'c' + (this.created.length + 1);
+    const title = text.length > 52 ? text.slice(0, 52).trim() + '…' : text;
+    const sess = {
+      id, title, repo: this.state.composeRepo, branch: 'pi/' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24).replace(/-$/, ''),
+      status: 'working', model: this.state.model, latest: 'Starting…', time: 'now', add: 55, del: 6, live: true,
+      thread: [
+        { role: 'user', text },
+        { role: 'agent', streaming: true,
+          intro: "I'll scope this out, make the change, and run the tests before reporting back.",
+          tools: [
+            { kind: 'read', path: 'src/index.ts', meta: '120 lines' },
+            { kind: 'search', path: 'related call sites', meta: '6 matches' },
+            { kind: 'edit', path: 'src/feature.ts', meta: '+34 −6' },
+            { kind: 'create', path: 'src/feature.test.ts', meta: '+27' },
+            { kind: 'test', path: 'npm test', meta: '9 passed' },
+          ],
+          text: 'Done — implemented the change across 3 files and added a test. All 9 tests pass. Ready for your review.' },
+      ],
+      changes: [
+        { path: 'src/feature.ts', status: 'M', add: 34, del: 6, diff: [{ t: '@', c: '@@ feature @@' }, { t: '+', c: '// implementation' }] },
+        { path: 'src/feature.test.ts', status: 'A', add: 27, del: 0, diff: [{ t: '+', c: "describe('feature', () => { /* … */ })" }] },
+      ],
+      terminal: ['$ npm test', '', 'Tests: 9 passed', 'Time: 1.1 s'],
+      tree: [{ label: title, meta: 'initial request', node: 'root' }, { label: 'Implement', meta: 'edit · create', bookmark: true }, { label: 'Run tests', meta: 'current', current: true }],
+    };
+    this.created.unshift(sess);
+    this.openSession(id);
+  }
+
+  // ---- render ----
+  pill(st) { return `display:inline-flex; align-items:center; gap:6px; padding:3px 9px 3px 8px; border-radius:20px; font-size:11.5px; font-weight:600; color:${st.color}; background:${st.bg};`; }
+  dot(st, big) { const sz = big ? 7 : 6; return `width:${sz}px; height:${sz}px; border-radius:50%; background:${st.color}; ${st.pulse ? 'animation:pi-pulse 1.4s infinite;' : ''}`; }
+
+  renderVals() {
+    const s = this.state;
+    const mobile = s.vw < 860;
+    const sess = this.getSession(s.activeId);
+    const all = this.allSessions();
+
+    const navSessions = all.map(x => { const st = this.statusOf(x); return {
+      title: x.title, dotStyle: this.dot(st, false), open: () => this.openSession(x.id),
+      rowStyle: `width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:9px 11px; border:none; border-radius:9px; cursor:pointer; background:${(x.id === s.activeId && s.route === 'session') ? '#e6e2d6' : 'transparent'};`,
+    }; });
+
+    const counts = { all: all.length };
+    Object.keys(this.ST).forEach(k => counts[k] = all.filter(x => x.status === k).length);
+    const filterDefs = [['all', 'All'], ['working', 'Working'], ['review', 'Needs review'], ['waiting', 'Waiting'], ['done', 'Done']];
+    const filters = filterDefs.map(([k, label]) => ({
+      label, count: counts[k] || 0, set: () => this.setState({ homeFilter: k }),
+      style: `display:inline-flex; align-items:center; padding:7px 13px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid ${s.homeFilter === k ? '#1b1b1d' : '#e2ded3'}; background:${s.homeFilter === k ? '#1b1b1d' : '#fff'}; color:${s.homeFilter === k ? '#f4f2ec' : '#5c594f'};`,
+    }));
+
+    const homeCards = all.filter(x => s.homeFilter === 'all' || x.status === s.homeFilter).map(x => {
+      const st = this.statusOf(x);
+      return {
+        title: x.title, repo: x.repo, branch: x.branch, model: this.modelLabel(x.model),
+        statusLabel: st.label, latest: x.latest, time: x.time,
+        add: '+' + x.add, del: '−' + x.del, hasChanges: (x.add + x.del) > 0,
+        pillStyle: this.pill(st), dotStyle: this.dot(st, false), miniDotStyle: this.dot(st, false),
+        open: () => this.openSession(x.id),
+      };
+    });
+
+    // ---- session thread ----
+    const out = { thread: [], working: false, workingLabel: '' };
+    if (sess) {
+      const live = sess.live;
+      const lastIdx = sess.thread.length - 1;
+      sess.thread.forEach((m, mi) => {
+        if (m.role === 'user') { out.thread.push({ isUser: true, isAgent: false, text: m.text, steer: !!m.steer }); return; }
+        const tools = m.tools || [];
+        const T = tools.length;
+        const isStream = live && m.streaming && mi === lastIdx;
+        let visCount = T, runIdx = -1, textShown = m.text || '', cursor = false, working = false;
+        if (isStream) {
+          const textStart = T * 5;
+          const words = (m.text || '').split(' ');
+          if (s.step < textStart) { visCount = Math.min(T, Math.floor(s.step / 5) + 1); runIdx = visCount - 1; textShown = ''; }
+          else { const rw = Math.min(words.length, (s.step - textStart) * 2); textShown = words.slice(0, rw).join(' '); cursor = rw < words.length; }
+          const max = this.streamMax(sess); working = s.step < max;
+          if (working) { const rt = tools[runIdx]; if (rt) { const meta = this.TM[rt.kind]; out.workingLabel = (meta ? meta.verb + 'ing ' : '') + rt.path; } else out.workingLabel = 'Composing response…'; }
+        }
+        const dispTools = tools.slice(0, visCount).map((t, ti) => {
+          const meta = this.TM[t.kind] || this.TM.read;
+          const running = isStream && ti === runIdx && working;
+          const done = !running;
+          return {
+            icon: this.ICONS[meta.icon], verb: meta.verb, path: t.path, meta: t.meta, running, done,
+            iconWrapStyle: `width:24px; height:24px; flex:none; border-radius:7px; display:flex; align-items:center; justify-content:center; color:${meta.c}; background:${meta.c === '#76736b' ? '#f0ede4' : (meta.c === '#2f6db0' ? '#e7eef7' : (meta.c === '#1f8a5b' ? '#e6f2eb' : '#ece9e1'))};`,
+            cardStyle: `border:1px solid ${running ? '#e7d3ad' : '#e6e2d6'}; border-radius:11px; background:${running ? '#fdf9f0' : '#fff'}; overflow:hidden;`,
+            hasDiff: !!t.diff && done, diff: (t.diff || []).map(d => this.diffLine(d)),
+          };
+        });
+        const reviewCTA = mi === lastIdx && !working && !isStream && (sess.add + sess.del) > 0 && sess.status !== 'done';
+        const liveReviewCTA = mi === lastIdx && isStream && !working && (sess.add + sess.del) > 0;
+        let genui = null;
+        if (m.genui && !isStream) genui = this.buildGenUI(m.genui, s);
+        out.thread.push({
+          isUser: false, isAgent: true,
+          intro: m.intro || '', tools: dispTools, hasTools: dispTools.length > 0,
+          text: textShown, hasText: !!textShown, cursor,
+          hasGenUI: !!genui, genui: genui || {},
+          question: !!m.question, options: (m.options || []).map(o => ({ label: o, pick: () => { sess.thread.push({ role: 'user', text: o }); this.forceUpdate(); } })),
+          reviewCTA: reviewCTA || liveReviewCTA, reviewLabel: `${sess.changes.length} files changed · ${'+' + sess.add} ${'−' + sess.del}`,
+        });
+      });
+      out.working = out.thread.some(t => false) || (live && s.step < this.streamMax(sess) && sess.status !== 'review' && sess.status !== 'done' && sess.status !== 'waiting' && sess.status !== 'error');
+      if (sess.status === 'working' && !sess.live) { out.working = true; out.workingLabel = sess.latest; }
+    }
+
+    // ---- changes / diff / terminal ----
+    const changesRaw = sess ? (sess.changes || []) : [];
+    const changes = changesRaw.map((c, i) => ({
+      path: c.path, status: c.status, addLabel: '+' + c.add, delLabel: '−' + c.del,
+      open: () => this.setState({ diffIndex: i, rightTab: 'diff', rightOpen: true }),
+      rowStyle: `width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:9px 10px; border:none; border-radius:8px; cursor:pointer; background:${i === s.diffIndex ? '#fff' : 'transparent'}; box-shadow:${i === s.diffIndex ? '0 1px 3px rgba(40,36,28,.08)' : 'none'};`,
+      badgeStyle: this.badge(c.status),
+    }));
+    const activeChange = changesRaw[s.diffIndex] || changesRaw[0];
+    let ln = 0;
+    const activeDiff = activeChange ? (activeChange.diff || []).map(d => { const dl = this.diffLine(d); dl.ln = (d.t === '@' || d.t === '-') ? '' : (++ln); if (d.t === '-') dl.ln = ''; return dl; }) : [];
+    const activeDiffPath = activeChange ? activeChange.path : '';
+    const terminalLines = sess ? (sess.terminal || []).map(l => ({ line: l || ' ', color: l && l.startsWith('$') ? '#9fe3bd' : (l && (l.includes('ERR') || l.includes('failed')) ? '#f0a99a' : (l && l.includes('✓') ? '#9fe3bd' : '#cfccc2')) })) : [];
+
+    // ---- tree ----
+    const tree = sess ? (sess.tree || []) : [];
+    const treeNodes = tree.map((n, i) => ({
+      label: n.label, meta: n.meta, bookmark: !!n.bookmark, current: !!n.current,
+      canRewind: !!n.canRewind, rewind: () => this.setState({ treeOpen: false }),
+      connector: i < tree.length - 1, indent: (n.branch ? 16 : 0) + 'px',
+      titleColor: n.current ? '#1f8a5b' : '#33312c',
+      nodeStyle: `width:11px; height:11px; border-radius:50%; flex:none; margin-top:4px; background:${n.current ? '#1f8a5b' : (n.branch ? '#fff' : '#cdc8ba')}; border:2px solid ${n.current ? '#1f8a5b' : (n.branch ? '#cdc8ba' : 'transparent')}; box-shadow:${n.current ? '0 0 0 3px #e6f2eb' : 'none'};`,
+    }));
+
+    // ---- model menu ----
+    const models = this.MODELS.map(m => ({
+      label: m.label, provider: m.provider, pick: () => this.setState({ model: m.id, modelMenu: false }),
+      style: `width:100%; text-align:left; display:flex; align-items:center; gap:9px; padding:8px 10px; border:none; border-radius:9px; background:transparent; cursor:pointer;`,
+      checkStyle: `width:7px; height:7px; border-radius:50%; flex:none; background:${m.id === s.model ? '#1f8a5b' : 'transparent'};`,
+    }));
+
+    // ---- right panel tabs ----
+    const rtab = (k, label) => ({ label, set: () => this.setState({ rightTab: k }), style: `padding:7px 13px; border:none; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600; background:${s.rightTab === k ? '#1b1b1d' : 'transparent'}; color:${s.rightTab === k ? '#f4f2ec' : '#76736b'};` });
+    const rightTabs = [rtab('files', 'Files'), rtab('diff', 'Diff'), rtab('terminal', 'Terminal')];
+
+    // ---- compose ----
+    const repoOptions = ['acme/web-app', 'acme/payments-api', 'acme/mobile', 'earendil-works/pi'].map(name => ({ name, pick: () => this.setState({ composeRepo: name, repoMenu: false }) }));
+    const skillDefs = [['tests', 'Run tests'], ['lint', 'Lint & format'], ['docs', 'Update docs']];
+    const skills = skillDefs.map(([k, label]) => ({ label, toggle: () => this.setState(st => ({ skills: { ...st.skills, [k]: !st.skills[k] } })), style: `padding:6px 11px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid ${s.skills[k] ? '#1f8a5b' : '#e2ded3'}; background:${s.skills[k] ? '#e6f2eb' : '#fff'}; color:${s.skills[k] ? '#1c5c3e' : '#76736b'};` }));
+    const examples = [
+      'Add optimistic updates to the cart with rollback on failure',
+      'Write integration tests for the webhook handler',
+      'Refactor the auth module to use async/await',
+    ].map(t => ({ text: t, use: () => this.setState({ composeText: t }) }));
+
+    // ---- settings ----
+    const repoSettings = [
+      { name: 'acme/web-app', meta: 'main · last sync 2m ago' },
+      { name: 'acme/payments-api', meta: 'main · last sync 5m ago' },
+      { name: 'acme/mobile', meta: 'main · last sync 1h ago' },
+    ];
+    const provTag = (ok) => `font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:8px; ${ok ? 'color:#1f8a5b; background:#e6f2eb;' : 'color:#9b9788; background:#f0ede4;'}`;
+    const providerSettings = [
+      { name: 'Anthropic', models: 'claude-sonnet-4.5 · claude-opus-4', status: 'API key', tagStyle: provTag(true) },
+      { name: 'OpenAI', models: 'gpt-5 · gpt-5-mini', status: 'API key', tagStyle: provTag(true) },
+      { name: 'Google', models: 'gemini-2.5-pro', status: 'OAuth', tagStyle: provTag(true) },
+      { name: 'Ollama (local)', models: 'qwen3-coder · llama3.3', status: 'Not configured', tagStyle: provTag(false) },
+    ];
+
+    // ---- composer ----
+    const seg = (active) => `padding:5px 11px; border:none; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; background:${active ? '#fff' : 'transparent'}; color:${active ? '#1b1b1d' : '#8a8678'}; box-shadow:${active ? '0 1px 2px rgba(40,36,28,.12)' : 'none'};`;
+
+    const st = sess ? this.statusOf(sess) : this.ST.working;
+
+    return {
+      isMobile: mobile, showSidebar: !mobile,
+      isHome: s.route === 'home', isSession: s.route === 'session', isReview: s.route === 'review', isCompose: s.route === 'compose', isSettings: s.route === 'settings',
+      goHome: () => this.go('home'), goSettings: () => this.go('settings'), newTask: () => this.go('compose'),
+      goReview: () => this.go('review'), backToSession: () => this.go('session'),
+      navHomeStyle: `width:100%; text-align:left; display:flex; align-items:center; gap:10px; padding:9px 12px; border:none; border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; color:#33312c; background:${s.route === 'home' ? '#e6e2d6' : 'transparent'};`,
+      navSettingsStyle: `width:100%; text-align:left; display:flex; align-items:center; gap:10px; padding:9px 12px; border:none; border-radius:9px; cursor:pointer; font-size:13.5px; font-weight:600; color:#33312c; background:${s.route === 'settings' ? '#e6e2d6' : 'transparent'};`,
+      navSessions, filters, homeCards,
+      activeCountLabel: `${counts.working || 0} working · ${counts.review || 0} need review · ${counts.waiting || 0} waiting on you`,
+
+      sessTitle: sess ? sess.title : '', sessRepo: sess ? sess.repo : '', sessBranch: sess ? sess.branch : '',
+      sessStatusLabel: st.label, sessPillStyle: this.pill(st), sessDotStyle: this.dot(st, false),
+      thread: out.thread, working: out.working, workingLabel: out.workingLabel || 'Working…',
+
+      rightOpen: s.rightOpen, toggleRight: () => this.setState(p => ({ rightOpen: !p.rightOpen })),
+      rightTabs, rtFiles: s.rightTab === 'files', rtDiff: s.rightTab === 'diff', rtTerminal: s.rightTab === 'terminal',
+      rightBtnStyle: `width:34px; height:34px; flex:none; border:1px solid #e2ded3; border-radius:9px; background:${s.rightOpen ? '#1b1b1d' : '#fff'}; color:${s.rightOpen ? '#f4f2ec' : '#5c594f'}; display:flex; align-items:center; justify-content:center; cursor:pointer;`,
+      changes, noChanges: changes.length === 0, activeDiff, activeDiffPath, terminalLines,
+
+      treeOpen: s.treeOpen, toggleTree: () => this.setState(p => ({ treeOpen: !p.treeOpen, modelMenu: false })), treeNodes,
+      modelMenu: s.modelMenu, toggleModelMenu: () => this.setState(p => ({ modelMenu: !p.modelMenu })), models, currentModel: this.modelLabel(s.model),
+
+      composer: s.composer, setComposer: (e) => this.setState({ composer: e.target.value }),
+      onComposerKey: (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.doSend(e.altKey ? 'follow' : s.sendMode); } },
+      send: () => this.doSend(s.sendMode),
+      setSteer: () => this.setState({ sendMode: 'steer' }), setFollow: () => this.setState({ sendMode: 'follow' }),
+      segSteerStyle: seg(s.sendMode === 'steer'), segFollowStyle: seg(s.sendMode === 'follow'),
+      sendLabel: s.sendMode === 'follow' ? 'Queue' : (out.working ? 'Steer' : 'Send'),
+      sendBtnStyle: `display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border:none; border-radius:9px; cursor:pointer; font-size:13px; font-weight:600; background:${s.sendMode === 'follow' ? '#b9772a' : '#1b1b1d'}; color:#fff;`,
+      composerHint: s.sendMode === 'follow' ? '↵ queue · ⇧↵ newline' : '↵ steer · ⌥↵ queue · ⇧↵ newline',
+      composerPlaceholder: out.working ? 'Steer the agent while it works…' : 'Reply to Pi, or start a follow-up…',
+      queued: s.queued.map((t, i) => ({ text: t, remove: () => this.setState(p => ({ queued: p.queued.filter((_, j) => j !== i) })) })),
+      hasQueued: s.queued.length > 0,
+      stopRun: () => { if (sess) sess.live = false; this.setState({ step: this.streamMax(sess) }); },
+
+      reviewSummary: sess ? `${(sess.changes || []).length} files · ${'+' + sess.add} ${'−' + sess.del}` : '',
+
+      composeText: s.composeText, setComposeText: (e) => this.setState({ composeText: e.target.value }),
+      composeRepo: s.composeRepo, repoMenu: s.repoMenu, toggleRepoMenu: () => this.setState(p => ({ repoMenu: !p.repoMenu })),
+      repoOptions, skills, examples, startTask: () => this.startTask(),
+
+      repoSettings, providerSettings,
+
+      mobileNav: s.mobileNav, toggleMobileNav: () => this.setState(p => ({ mobileNav: !p.mobileNav })),
+    };
+  }
+
+  diffLine(d) {
+    const map = { '+': { bg: '#e9f5ee', fg: '#1c6b44', sign: '+' }, '-': { bg: '#fbeae5', fg: '#a8331f', sign: '−' }, ' ': { bg: 'transparent', fg: '#6b6862', sign: ' ' }, '@': { bg: '#f1edfb', fg: '#6a4cc0', sign: '' } };
+    const m = map[d.t] || map[' '];
+    return { bg: m.bg, fg: m.fg, sign: m.sign, code: d.c, ln: '' };
+  }
+  badge(status) {
+    const map = { A: { c: '#1f8a5b', bg: '#e6f2eb' }, M: { c: '#2f6db0', bg: '#e7eef7' }, D: { c: '#c0432f', bg: '#f7e7e3' } };
+    const m = map[status] || map.M;
+    return `width:18px; height:18px; flex:none; border-radius:5px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; color:${m.c}; background:${m.bg};`;
+  }
+}
+</script>
+</body>
+</html>
