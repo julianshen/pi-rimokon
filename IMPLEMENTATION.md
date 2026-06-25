@@ -13,6 +13,8 @@ cp .env.example .env.local   # then fill in your Supabase values (see Authentica
 npm run dev        # http://localhost:5173
 npm run build      # typecheck (tsc -b) + production build to dist/
 npm run preview    # serve the production build
+npm test           # run the Vitest suite
+npm run coverage   # run tests with coverage (gated at 90% across src/)
 ```
 
 > Fonts (Hanken Grotesk + JetBrains Mono) load from Google Fonts at runtime.
@@ -77,6 +79,33 @@ provider (e.g. Google) is two lines: a new entry in the `OAuthProvider` union
 wraps `<App/>` in `<AuthProvider><AuthGate>…`. Auth is independent of the
 `PiService` seam, so swapping the mock transport for a real Pi backend doesn't
 touch sign-in.
+
+## Dark mode
+
+The whole app supports light/dark, driven by a `data-theme` attribute on `<html>`.
+
+- **Palette as CSS variables** — `src/styles/global.css` defines every color token
+  (`--pi-paper`, `--pi-surface`, `--pi-text`, status/diff accents, …) twice: light
+  values on `:root` and dark overrides under `:root[data-theme='dark']`.
+  `src/lib/theme.ts` (`colors` + the status/diff/tool/badge helpers) emits
+  `var(--pi-*)` references, and components style from those — so a single attribute
+  switch repaints everything; tweaking a shade is a one-line edit in `global.css`.
+- **State** — `src/hooks/useTheme.tsx` (`ThemeProvider` + `useTheme`) holds the
+  user's mode (`light` / `dark` / `system`), tracks the live OS preference, derives
+  the resolved theme, persists the choice to `localStorage` (`pi-theme`), and applies
+  it. Pure logic lives in `src/lib/theme.ts` (`resolveTheme`, `readStoredMode`,
+  `storeMode`, `applyTheme`, `systemPrefersDark`).
+- **Toggle** — `src/components/ThemeToggle.tsx` (sun/moon) appears in the sidebar
+  footer, the mobile drawer, the Settings → Appearance card, and the login screen.
+- Defaults to the OS preference; a manual choice sticks across reloads.
+
+## Testing
+
+Vitest + React Testing Library (jsdom), configured in `vitest.config.ts` with v8
+coverage **gated at 90%** across `src/` (`npm run coverage`). `src/test/setup.ts`
+wires jest-dom matchers, auto-cleanup, a `matchMedia` mock, and per-test
+`localStorage`/`data-theme` reset. The theme core was built test-first; components
+have characterization tests rendered through the `ThemeProvider`/`AuthProvider`.
 
 ## What's here
 

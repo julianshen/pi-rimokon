@@ -18,7 +18,7 @@ export default function App() {
   const { state, patch, mobile, sessions, activeSession, actions } = useAppStore(service)
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: '#f4f2ec' }}>
+    <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden', background: 'var(--pi-paper)' }}>
       {!mobile && (
         <Sidebar
           route={state.route}

@@ -36,30 +36,30 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 20px', borderBottom: '1px solid #e6e2d6' }}>
+      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 20px', borderBottom: '1px solid var(--pi-border-card)' }}>
         <button
           className="pi-hover-border"
           onClick={onBack}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', border: '1px solid #e2ded3', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', border: '1px solid var(--pi-border)', borderRadius: 9, background: 'var(--pi-surface)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
         >
-          <ChevronLeft size={15} stroke="#5c594f" />
+          <ChevronLeft size={15} stroke="var(--pi-text-soft)" />
           Session
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 650, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.title}</div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#8a8678', marginTop: 2 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-text-faint)', marginTop: 2 }}>
             {session.branch} → main · {reviewSummary}
           </div>
         </div>
         <button
           className="pi-hover-reject"
-          style={{ padding: '8px 13px', border: '1px solid #e2ded3', borderRadius: 9, background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#b23a28' }}
+          style={{ padding: '8px 13px', border: '1px solid var(--pi-border)', borderRadius: 9, background: 'var(--pi-surface)', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--pi-red-deep)' }}
         >
           Request changes
         </button>
         <button
           className="pi-hover-green"
-          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', border: 'none', borderRadius: 9, background: '#1f8a5b', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 14px', border: 'none', borderRadius: 9, background: 'var(--pi-green)', color: 'var(--pi-on-ink)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
           <CheckIcon size={15} />
           Approve &amp; merge
@@ -67,8 +67,8 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
       </div>
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <div style={{ width: 280, flex: 'none', borderRight: '1px solid #e6e2d6', overflowY: 'auto', padding: '14px 10px', background: '#faf8f2' }}>
-          <div style={{ padding: '4px 10px 10px', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#9b9788' }}>
+        <div style={{ width: 280, flex: 'none', borderRight: '1px solid var(--pi-border-card)', overflowY: 'auto', padding: '14px 10px', background: 'var(--pi-surface-muted)' }}>
+          <div style={{ padding: '4px 10px 10px', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pi-text-fainter)' }}>
             Changed files
           </div>
           {changes.map((c, i) => (
@@ -86,7 +86,7 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
                 border: 'none',
                 borderRadius: 8,
                 cursor: 'pointer',
-                background: i === diffIndex ? '#fff' : 'transparent',
+                background: i === diffIndex ? 'var(--pi-surface)' : 'transparent',
                 boxShadow: i === diffIndex ? '0 1px 3px rgba(40,36,28,.08)' : 'none',
               }}
             >
@@ -106,24 +106,24 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
               >
                 {c.path}
               </span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: '#1f8a5b', flex: 'none' }}>+{c.add}</span>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: '#b23a28', flex: 'none' }}>−{c.del}</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: 'var(--pi-green)', flex: 'none' }}>+{c.add}</span>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: 'var(--pi-red-deep)', flex: 'none' }}>−{c.del}</span>
             </button>
           ))}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', background: '#fff' }}>
+        <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', background: 'var(--pi-surface)' }}>
           <div
             style={{
               position: 'sticky',
               top: 0,
-              background: '#fbfaf6',
-              borderBottom: '1px solid #e6e2d6',
+              background: 'var(--pi-surface-muted2)',
+              borderBottom: '1px solid var(--pi-border-card)',
               padding: '11px 18px',
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 12.5,
               fontWeight: 600,
-              color: '#33312c',
+              color: 'var(--pi-text-body)',
             }}
           >
             {activeChange ? activeChange.path : ''}
@@ -131,7 +131,7 @@ export function ReviewScreen({ session, diffIndex, onSelectDiff, onBack }: Revie
           <div style={{ padding: '6px 0 40px' }}>
             {activeDiff.map((d, i) => (
               <div key={i} style={{ display: 'flex', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, lineHeight: 1.85, background: d.bg }}>
-                <span style={{ width: 46, flex: 'none', textAlign: 'right', paddingRight: 12, color: '#bdb9ac', userSelect: 'none' }}>{d.ln}</span>
+                <span style={{ width: 46, flex: 'none', textAlign: 'right', paddingRight: 12, color: 'var(--pi-border-hover)', userSelect: 'none' }}>{d.ln}</span>
                 <span style={{ flex: 1, whiteSpace: 'pre', paddingRight: 18, color: d.fg }}>
                   <span style={{ opacity: 0.55, userSelect: 'none' }}>{d.sign} </span>
                   {d.code}

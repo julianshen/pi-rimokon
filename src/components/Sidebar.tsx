@@ -2,6 +2,7 @@ import type { Session } from '../lib/types'
 import { dotStyle, statusOf } from '../lib/theme'
 import { GearIcon, GridIcon, LogoutIcon, PiMark } from './icons'
 import { Avatar } from './Avatar'
+import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../hooks/useAuth'
 import type { Route } from '../hooks/useAppStore'
 
@@ -27,8 +28,8 @@ function navStyle(active: boolean): React.CSSProperties {
     cursor: 'pointer',
     fontSize: 13.5,
     fontWeight: 600,
-    color: '#33312c',
-    background: active ? '#e6e2d6' : 'transparent',
+    color: 'var(--pi-text-body)',
+    background: active ? 'var(--pi-border-card)' : 'transparent',
   }
 }
 
@@ -42,8 +43,8 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: '#efece4',
-        borderRight: '1px solid #e2ded3',
+        background: 'var(--pi-sidebar)',
+        borderRight: '1px solid var(--pi-border)',
       }}
     >
       <div style={{ padding: '18px 18px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -72,7 +73,7 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
           fontFamily: "'JetBrains Mono',monospace",
           fontSize: 10,
           letterSpacing: '.08em',
-          color: '#9b9788',
+          color: 'var(--pi-text-fainter)',
           textTransform: 'uppercase',
         }}
       >
@@ -97,7 +98,7 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
                 border: 'none',
                 borderRadius: 9,
                 cursor: 'pointer',
-                background: selected ? '#e6e2d6' : 'transparent',
+                background: selected ? 'var(--pi-border-card)' : 'transparent',
               }}
             >
               <span style={{ position: 'relative', width: 8, height: 8, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -112,14 +113,14 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
       </div>
 
       {/* Profile footer — the signed-in account, with sign-out. */}
-      <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid #e2ded3', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid var(--pi-border)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={32} />
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>
           <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {profile?.name ?? 'Account'}
           </span>
           {profile?.email && (
-            <span style={{ fontSize: 11.5, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 11.5, color: 'var(--pi-text-fainter)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {profile.email}
             </span>
           )}
@@ -139,12 +140,13 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
             border: 'none',
             borderRadius: 8,
             background: 'transparent',
-            color: '#9b9788',
+            color: 'var(--pi-text-fainter)',
             cursor: 'pointer',
           }}
         >
           <LogoutIcon size={16} />
         </button>
+        <ThemeToggle />
       </div>
     </aside>
   )

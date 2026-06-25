@@ -23,8 +23,8 @@ function segStyle(active: boolean): React.CSSProperties {
     fontSize: 12,
     fontWeight: 600,
     cursor: 'pointer',
-    background: active ? '#fff' : 'transparent',
-    color: active ? '#1b1b1d' : '#8a8678',
+    background: active ? 'var(--pi-surface)' : 'transparent',
+    color: active ? 'var(--pi-text)' : 'var(--pi-text-faint)',
     boxShadow: active ? '0 1px 2px rgba(40,36,28,.12)' : 'none',
   }
 }
@@ -65,9 +65,9 @@ export function Composer({
               gap: 10,
               padding: '9px 14px',
               marginBottom: 9,
-              background: '#1b1b1d',
+              background: 'var(--pi-ink-surface)',
               borderRadius: 11,
-              color: '#f4f2ec',
+              color: 'var(--pi-on-ink)',
               animation: 'pi-rise .2s ease',
             }}
           >
@@ -79,7 +79,7 @@ export function Composer({
             <span style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {workingLabel}
             </span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#9b9788' }}>↵ to steer</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-text-fainter)' }}>↵ to steer</span>
             <button
               onClick={onStop}
               className="pi-hover-stop"
@@ -88,7 +88,7 @@ export function Composer({
                 border: '1px solid #3a3a3d',
                 borderRadius: 7,
                 background: 'transparent',
-                color: '#f4f2ec',
+                color: 'var(--pi-on-ink)',
                 fontSize: 11.5,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -110,17 +110,17 @@ export function Composer({
                   alignItems: 'center',
                   gap: 7,
                   padding: '6px 8px 6px 11px',
-                  background: '#f6ecdb',
-                  border: '1px solid #e7d3ad',
+                  background: 'var(--pi-amber-soft)',
+                  border: '1px solid var(--pi-amber-deep)',
                   borderRadius: 9,
                   fontSize: 12.5,
-                  color: '#7a5417',
+                  color: 'var(--pi-amber-deep)',
                   maxWidth: 340,
                 }}
               >
                 <QueueIcon size={12} style={{ flex: 'none' }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q}</span>
-                <button onClick={() => onRemoveQueued(i)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a98a4e', display: 'flex', padding: 0 }}>
+                <button onClick={() => onRemoveQueued(i)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--pi-amber-deep)', display: 'flex', padding: 0 }}>
                   <CloseIcon size={13} strokeWidth={2.2} />
                 </button>
               </span>
@@ -128,7 +128,7 @@ export function Composer({
           </div>
         )}
 
-        <div style={{ background: '#fff', border: '1px solid #d8d4c9', borderRadius: 14, padding: '12px 14px 10px', boxShadow: '0 2px 12px rgba(40,36,28,.05)' }}>
+        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-scrollbar)', borderRadius: 14, padding: '12px 14px 10px', boxShadow: '0 2px 12px rgba(40,36,28,.05)' }}>
           <textarea
             value={composer}
             onChange={(e) => onComposerChange(e.target.value)}
@@ -141,14 +141,14 @@ export function Composer({
               resize: 'none',
               fontSize: 14.5,
               lineHeight: 1.55,
-              color: '#1b1b1d',
+              color: 'var(--pi-text)',
               background: 'transparent',
               minHeight: 24,
               maxHeight: 160,
             }}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <div style={{ display: 'inline-flex', background: '#f0ede4', borderRadius: 9, padding: 2 }}>
+            <div style={{ display: 'inline-flex', background: 'var(--pi-border-hair)', borderRadius: 9, padding: 2 }}>
               <button onClick={() => onSendMode('steer')} style={segStyle(sendMode === 'steer')}>
                 Steer
               </button>
@@ -156,7 +156,7 @@ export function Composer({
                 Follow-up
               </button>
             </div>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: '#9b9788' }}>{composerHint}</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: 'var(--pi-text-fainter)' }}>{composerHint}</span>
             <div style={{ flex: 1 }} />
             <button
               className="pi-hover-opacity"
@@ -171,8 +171,8 @@ export function Composer({
                 cursor: 'pointer',
                 fontSize: 13,
                 fontWeight: 600,
-                background: sendMode === 'follow' ? '#b9772a' : '#1b1b1d',
-                color: '#fff',
+                background: sendMode === 'follow' ? 'var(--pi-amber)' : 'var(--pi-ink-surface)',
+                color: 'var(--pi-on-ink)',
               }}
             >
               {sendLabel}

@@ -34,33 +34,33 @@ export function ComposeScreen(props: ComposeScreenProps) {
             <PiMark tile={48} font={27} radius={13} />
           </div>
           <h1 style={{ margin: 0, fontSize: 25, fontWeight: 700, letterSpacing: '-.02em' }}>Start a new session</h1>
-          <p style={{ margin: '8px 0 0', color: '#76736b', fontSize: 14.5 }}>
+          <p style={{ margin: '8px 0 0', color: 'var(--pi-text-muted)', fontSize: 14.5 }}>
             A live Pi instance spins up at remote in a fresh worktree and reports back when it's ready for review.
           </p>
         </div>
 
-        <div style={{ background: '#fff', border: '1px solid #e6e2d6', borderRadius: 16, padding: 8, boxShadow: '0 4px 20px rgba(40,36,28,.05)' }}>
+        <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-border-card)', borderRadius: 16, padding: 8, boxShadow: '0 4px 20px rgba(40,36,28,.05)' }}>
           <div style={{ display: 'flex', gap: 8, padding: '10px 10px 0', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 180 }}>
               <button
                 className="pi-hover-border"
                 onClick={props.onToggleRepoMenu}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px', border: '1px solid #e2ded3', borderRadius: 10, background: '#faf8f2', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px', border: '1px solid var(--pi-border)', borderRadius: 10, background: 'var(--pi-surface-muted)', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
               >
-                <BranchIcon size={15} stroke="#5c594f" />
+                <BranchIcon size={15} stroke="var(--pi-text-soft)" />
                 <span style={{ flex: 1, minWidth: 0, textAlign: 'left', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {props.composeRepo}
                 </span>
-                <ChevronDown size={13} stroke="#8a8678" />
+                <ChevronDown size={13} stroke="var(--pi-text-faint)" />
               </button>
               {props.repoMenu && (
-                <div style={{ position: 'absolute', top: 46, left: 0, right: 0, background: '#fff', border: '1px solid #e2ded3', borderRadius: 11, boxShadow: '0 12px 36px rgba(40,36,28,.15)', padding: 5, zIndex: 30 }}>
+                <div style={{ position: 'absolute', top: 46, left: 0, right: 0, background: 'var(--pi-surface)', border: '1px solid var(--pi-border)', borderRadius: 11, boxShadow: '0 12px 36px rgba(40,36,28,.15)', padding: 5, zIndex: 30 }}>
                   {REPO_OPTIONS.map((name) => (
                     <button
                       key={name}
                       className="pi-hover-soft"
                       onClick={() => props.onPickRepo(name)}
-                      style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: 'none', borderRadius: 8, background: 'transparent', cursor: 'pointer', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, color: '#33312c' }}
+                      style={{ width: '100%', textAlign: 'left', padding: '8px 10px', border: 'none', borderRadius: 8, background: 'transparent', cursor: 'pointer', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, color: 'var(--pi-text-body)' }}
                     >
                       {name}
                     </button>
@@ -68,8 +68,8 @@ export function ComposeScreen(props: ComposeScreenProps) {
                 </div>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 11px', border: '1px solid #e2ded3', borderRadius: 10, background: '#faf8f2', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, color: '#76736b' }}>
-              <BaseBranchIcon size={14} stroke="#5c594f" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 11px', border: '1px solid var(--pi-border)', borderRadius: 10, background: 'var(--pi-surface-muted)', fontFamily: "'JetBrains Mono',monospace", fontSize: 12.5, color: 'var(--pi-text-muted)' }}>
+              <BaseBranchIcon size={14} stroke="var(--pi-text-soft)" />
               base: main
             </div>
           </div>
@@ -79,11 +79,11 @@ export function ComposeScreen(props: ComposeScreenProps) {
             onChange={(e) => props.onComposeText(e.target.value)}
             placeholder={'Describe the task — e.g. “Add optimistic updates to the cart and handle rollback on failure.”'}
             rows={4}
-            style={{ width: '100%', border: 'none', resize: 'none', fontSize: 15, lineHeight: 1.6, color: '#1b1b1d', background: 'transparent', padding: '14px 12px', minHeight: 96 }}
+            style={{ width: '100%', border: 'none', resize: 'none', fontSize: 15, lineHeight: 1.6, color: 'var(--pi-text)', background: 'transparent', padding: '14px 12px', minHeight: 96 }}
           />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px 10px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: '#9b9788', marginRight: 2 }}>SKILLS</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10.5, color: 'var(--pi-text-fainter)', marginRight: 2 }}>SKILLS</span>
             {SKILL_DEFS.map(([k, label]) => {
               const on = props.skills[k]
               return (
@@ -96,9 +96,9 @@ export function ComposeScreen(props: ComposeScreenProps) {
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
-                    border: `1px solid ${on ? '#1f8a5b' : '#e2ded3'}`,
-                    background: on ? '#e6f2eb' : '#fff',
-                    color: on ? '#1c5c3e' : '#76736b',
+                    border: `1px solid ${on ? 'var(--pi-green)' : 'var(--pi-border)'}`,
+                    background: on ? 'var(--pi-green-soft)' : 'var(--pi-surface)',
+                    color: on ? 'var(--pi-green-deep)' : 'var(--pi-text-muted)',
                   }}
                 >
                   {label}
@@ -109,7 +109,7 @@ export function ComposeScreen(props: ComposeScreenProps) {
             <button
               className="pi-hover-ink"
               onClick={props.onStart}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', border: 'none', borderRadius: 10, background: '#1b1b1d', color: '#f4f2ec', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', border: 'none', borderRadius: 10, background: 'var(--pi-ink-surface)', color: 'var(--pi-on-ink)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}
             >
               Start session
               <ArrowRight size={15} />
@@ -118,7 +118,7 @@ export function ComposeScreen(props: ComposeScreenProps) {
         </div>
 
         <div style={{ marginTop: 26 }}>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#9b9788', marginBottom: 10 }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pi-text-fainter)', marginBottom: 10 }}>
             Try one of these
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -127,11 +127,11 @@ export function ComposeScreen(props: ComposeScreenProps) {
                 key={text}
                 className="pi-hover-example"
                 onClick={() => props.onUseExample(text)}
-                style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', border: '1px solid #e6e2d6', borderRadius: 11, background: '#fff', cursor: 'pointer', fontSize: 14, color: '#33312c' }}
+                style={{ textAlign: 'left', display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', border: '1px solid var(--pi-border-card)', borderRadius: 11, background: 'var(--pi-surface)', cursor: 'pointer', fontSize: 14, color: 'var(--pi-text-body)' }}
               >
-                <BoltIcon size={16} stroke="#b9772a" style={{ flex: 'none' }} />
+                <BoltIcon size={16} stroke="var(--pi-amber)" style={{ flex: 'none' }} />
                 <span style={{ flex: 1 }}>{text}</span>
-                <ChevronRight size={15} stroke="#bdb9ac" strokeWidth={2} style={{ flex: 'none' }} />
+                <ChevronRight size={15} stroke="var(--pi-border-hover)" strokeWidth={2} style={{ flex: 'none' }} />
               </button>
             ))}
           </div>
