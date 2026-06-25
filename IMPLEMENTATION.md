@@ -9,12 +9,72 @@ design intent).
 
 ```bash
 npm install
+cp .env.example .env.local   # then fill in your Supabase values (see Authentication)
 npm run dev        # http://localhost:5173
 npm run build      # typecheck (tsc -b) + production build to dist/
 npm run preview    # serve the production build
 ```
 
 > Fonts (Hanken Grotesk + JetBrains Mono) load from Google Fonts at runtime.
+
+> Without Supabase env vars the app boots to a "Sign-in isn't configured yet"
+> notice instead of crashing — fill them in to enable Google sign-in.
+
+## Authentication (Google sign-in)
+
+The whole app is gated behind **Sign in with Google**, implemented with
+[Supabase Auth](https://supabase.com/auth). Supabase brokers the Google OAuth
+flow, so the client only needs two public values, supplied via Vite env vars:
+
+| Variable                 | Where to find it                                    |
+| ------------------------ | --------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Supabase → Project Settings → API → Project URL     |
+| `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon/public key |
+
+Both are publishable (the anon key is RLS-gated and meant to ship in the
+browser), so they're safe to expose client-side.
+
+### One-time setup
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com).
+2. **Create Google OAuth credentials** in the
+   [Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
+   *Create Credentials → OAuth client ID → Web application*. Under **Authorized
+   redirect URIs** add your Supabase callback:
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+3. **Enable Google in Supabase** → *Authentication → Providers → Google*: paste
+   the Google **Client ID** and **Client secret**, and save.
+4. **Set the allowed app URLs** in Supabase → *Authentication → URL
+   Configuration*:
+   - **Site URL**: `https://pi-rimokon.vercel.app`
+   - **Redirect URLs**: add `http://localhost:5173` (dev),
+     `https://pi-rimokon.vercel.app` (prod), and — for Vercel preview deploys —
+     `https://*.vercel.app`.
+5. **Local dev**: `cp .env.example .env.local` and fill in the two values.
+6. **Vercel**: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under
+   *Project → Settings → Environment Variables*, then redeploy (Vite inlines env
+   vars at build time, so a rebuild is required after changing them).
+
+Sign-in redirects back to `window.location.origin`, so the same setup works in
+dev and on every deployment with no per-environment code. Sessions persist
+across reloads; sign-out lives in the sidebar footer, the mobile nav drawer, and
+**Settings → Account**.
+
+### How it's wired
+
+```
+src/
+  lib/supabase.ts          the Supabase client (null + a notice if env is unset)
+  hooks/useAuth.tsx        AuthProvider + useAuth() — session, profile, sign in/out
+  components/
+    AuthGate.tsx           splash while loading → LoginScreen when out → app when in
+    LoginScreen.tsx        the gate: "Continue with Google" + unconfigured notice
+    Avatar.tsx             Google picture with an initials fallback
+```
+
+`main.tsx` wraps `<App/>` in `<AuthProvider><AuthGate>…`. Auth is independent of
+the `PiService` seam, so swapping the mock transport for a real Pi backend
+doesn't touch sign-in.
 
 ## What's here
 

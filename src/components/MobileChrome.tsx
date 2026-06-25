@@ -1,6 +1,8 @@
 import type { Session } from '../lib/types'
 import { dotStyle, statusOf } from '../lib/theme'
-import { MenuIcon, PiMark } from './icons'
+import { LogoutIcon, MenuIcon, PiMark } from './icons'
+import { Avatar } from './Avatar'
+import { useAuth } from '../hooks/useAuth'
 
 interface TopBarProps {
   onToggleNav: () => void
@@ -51,6 +53,7 @@ interface NavDrawerProps {
 }
 
 export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenSession }: NavDrawerProps) {
+  const { profile, signOut } = useAuth()
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(27,27,29,.3)', zIndex: 60 }} />
@@ -105,6 +108,42 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
               </button>
             )
           })}
+        </div>
+
+        {/* Profile footer — signed-in account + sign-out. */}
+        <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid #e2ded3', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={34} />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {profile?.name ?? 'Account'}
+            </span>
+            {profile?.email && (
+              <span style={{ fontSize: 12, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile.email}
+              </span>
+            )}
+          </div>
+          <button
+            className="pi-hover-fill"
+            onClick={signOut}
+            title="Sign out"
+            aria-label="Sign out"
+            style={{
+              flex: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 34,
+              height: 34,
+              border: 'none',
+              borderRadius: 9,
+              background: 'transparent',
+              color: '#76736b',
+              cursor: 'pointer',
+            }}
+          >
+            <LogoutIcon size={17} />
+          </button>
         </div>
       </aside>
     </>

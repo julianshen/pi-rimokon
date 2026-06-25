@@ -1,5 +1,7 @@
 import type { RepoConnection } from '../lib/types'
-import { BranchIcon } from './icons'
+import { BranchIcon, LogoutIcon } from './icons'
+import { Avatar } from './Avatar'
+import { useAuth } from '../hooks/useAuth'
 
 // Connected repos/agents. In production this list comes from the Pi backend.
 const CONNECTED: RepoConnection[] = [
@@ -9,6 +11,7 @@ const CONNECTED: RepoConnection[] = [
 ]
 
 export function SettingsScreen() {
+  const { profile, signOut } = useAuth()
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '34px 28px 80px' }}>
@@ -16,6 +19,45 @@ export function SettingsScreen() {
         <p style={{ margin: '0 0 28px', color: '#76736b', fontSize: 14.5 }}>
           Adapt Pi to your workflow — connect repos, manage providers, set defaults.
         </p>
+
+        <div style={{ background: '#fff', border: '1px solid #e6e2d6', borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
+          <div style={{ padding: '15px 18px', borderBottom: '1px solid #f0ede4', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 15, fontWeight: 650, flex: 1 }}>Account</span>
+          </div>
+          <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 13 }}>
+            <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={42} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 650, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile?.name ?? 'Account'}
+              </div>
+              <div style={{ fontSize: 13, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile?.email ?? 'Signed in with Google'}
+              </div>
+            </div>
+            <button
+              className="pi-hover-border"
+              onClick={signOut}
+              style={{
+                flex: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 14px',
+                border: '1px solid #e0dccf',
+                borderRadius: 9,
+                background: '#fff',
+                color: '#33312c',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'border-color .15s ease',
+              }}
+            >
+              <LogoutIcon size={15} />
+              Sign out
+            </button>
+          </div>
+        </div>
 
         <div style={{ background: '#fff', border: '1px solid #e6e2d6', borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
           <div style={{ padding: '15px 18px', borderBottom: '1px solid #f0ede4', display: 'flex', alignItems: 'center', gap: 10 }}>

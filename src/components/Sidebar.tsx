@@ -1,6 +1,8 @@
 import type { Session } from '../lib/types'
 import { dotStyle, statusOf } from '../lib/theme'
-import { ChevronDown, GearIcon, GridIcon, PiMark } from './icons'
+import { GearIcon, GridIcon, LogoutIcon, PiMark } from './icons'
+import { Avatar } from './Avatar'
+import { useAuth } from '../hooks/useAuth'
 import type { Route } from '../hooks/useAppStore'
 
 interface SidebarProps {
@@ -31,6 +33,7 @@ function navStyle(active: boolean): React.CSSProperties {
 }
 
 export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenSession }: SidebarProps) {
+  const { profile, signOut } = useAuth()
   return (
     <aside
       style={{
@@ -108,31 +111,40 @@ export function Sidebar({ route, sessions, activeId, onHome, onSettings, onOpenS
         })}
       </div>
 
-      {/* Profile footer (restored per chat 2). */}
+      {/* Profile footer — the signed-in Google account, with sign-out. */}
       <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid #e2ded3', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div
+        <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={32} />
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {profile?.name ?? 'Account'}
+          </span>
+          {profile?.email && (
+            <span style={{ fontSize: 11.5, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {profile.email}
+            </span>
+          )}
+        </div>
+        <button
+          className="pi-hover-row"
+          onClick={signOut}
+          title="Sign out"
+          aria-label="Sign out"
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: '#cdc8ba',
-            color: '#5c594f',
-            fontSize: 12,
-            fontWeight: 700,
+            flex: 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            flex: 'none',
+            width: 30,
+            height: 30,
+            border: 'none',
+            borderRadius: 8,
+            background: 'transparent',
+            color: '#9b9788',
+            cursor: 'pointer',
           }}
         >
-          EM
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Earendil Mort
-          </span>
-        </div>
-        <ChevronDown size={16} stroke="#9b9788" strokeWidth={1.9} style={{ flex: 'none' }} />
+          <LogoutIcon size={16} />
+        </button>
       </div>
     </aside>
   )
