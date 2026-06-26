@@ -62,6 +62,8 @@
   /* primary / "ink" buttons: high-contrast solid (inverts in dark) */
   --pi-ink-surface: #1b1b1d;
   --pi-on-ink: #f4f2ec;
+  --pi-ink-hover: #000000; /* hover for ink/primary buttons (keeps on-ink text readable) */
+  --pi-stop-hover: #2a2a2d; /* hover for the Stop button on the working banner */
 }
 
 :root[data-theme='dark'] {
@@ -122,6 +124,8 @@
   --pi-logo-fg: #14161b;
   --pi-ink-surface: #f3f1ea;
   --pi-on-ink: #14161b;
+  --pi-ink-hover: #e4e1d9;
+  --pi-stop-hover: #e4e1d9;
 }
 
 * {
@@ -254,7 +258,7 @@ input:focus {
   opacity: 0.88;
 }
 .pi-hover-ink:hover {
-  background: #000 !important;
+  background: var(--pi-ink-hover) !important;
 }
 .pi-hover-green:hover {
   background: var(--pi-green-dark) !important;
@@ -276,7 +280,7 @@ input:focus {
   color: var(--pi-purple) !important;
 }
 .pi-hover-stop:hover {
-  background: #2a2a2d !important;
+  background: var(--pi-stop-hover) !important;
 }
 .pi-hover-soft2-row:hover {
   background: var(--pi-border-hair) !important;

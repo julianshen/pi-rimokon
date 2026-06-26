@@ -44,11 +44,13 @@ function tabStyle(active: boolean): React.CSSProperties {
   }
 }
 
+// The terminal pane is a fixed-dark surface in both themes, so its text uses
+// fixed light colors (themed vars would go dark-on-dark in dark mode).
 function terminalColor(line: string): string {
   if (line && line.startsWith('$')) return '#9fe3bd'
-  if (line && (line.includes('ERR') || line.includes('failed'))) return 'var(--pi-red-border)'
+  if (line && (line.includes('ERR') || line.includes('failed'))) return '#e0b3a8'
   if (line && line.includes('✓')) return '#9fe3bd'
-  return 'var(--pi-border-strong)'
+  return '#cfc9ba'
 }
 
 export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClose }: WorkPanelProps) {
