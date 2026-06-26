@@ -39,6 +39,20 @@ describe('readStoredMode / storeMode', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'banana')
     expect(readStoredMode()).toBe('system')
   })
+  it('falls back to "system" when storage reads throw (blocked storage)', () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    })
+    expect(readStoredMode()).toBe('system')
+    spy.mockRestore()
+  })
+  it('swallows errors when storage writes throw', () => {
+    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('SecurityError')
+    })
+    expect(() => storeMode('dark')).not.toThrow()
+    spy.mockRestore()
+  })
 })
 
 describe('applyTheme', () => {

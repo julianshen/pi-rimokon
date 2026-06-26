@@ -127,7 +127,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                     borderRadius: 12,
                   }}
                 >
-                  <CheckIcon size={18} stroke="var(--pi-green)" strokeWidth={2} style={{ flex: 'none' }} />
+                  <CheckIcon size={18} strokeWidth={2} style={{ flex: 'none', color: 'var(--pi-green)' }} />
                   <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--pi-green-deep)', flex: 1, minWidth: 120 }}>{m.reviewLabel}</span>
                   <button
                     className="pi-hover-green"

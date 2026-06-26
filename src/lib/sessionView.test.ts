@@ -175,8 +175,34 @@ describe('buildThreadView', () => {
   })
 
   it('builds diff line views for tool calls with diffs once done', () => {
-    // live session at max so the edit/create tools are done and expose their diffs
-    const sess = byId('s1')
+    // A done agent tool whose diff carries an added, a removed and a hunk row, so
+    // we can pin the exact bg/sign mapping for each kind. (Mirrors how a real edit
+    // tool exposes its diff; built inline because seeds omit a hunk row in-thread.)
+    const sess: Session = {
+      ...byId('s4'), // done session -> tools are not streaming, so diffs render
+      live: false,
+      thread: [
+        { role: 'user', text: 'go' },
+        {
+          role: 'agent',
+          intro: 'edited',
+          tools: [
+            {
+              kind: 'edit',
+              path: 'src/x.ts',
+              meta: '+1 −1',
+              diff: [
+                { t: '@', c: '@@ -1,2 +1,2 @@' },
+                { t: ' ', c: 'context' },
+                { t: '+', c: 'added line' },
+                { t: '-', c: 'removed line' },
+              ],
+            },
+          ],
+          text: 'done',
+        },
+      ],
+    }
     const view = buildThreadView(sess, streamMax(sess))
     const agent = view.items.find((i) => i.kind === 'agent')!
     if (agent.kind === 'agent') {
@@ -186,6 +212,29 @@ describe('buildThreadView', () => {
       // diff line views carry bg/fg/sign
       expect(withDiff!.diff[0]).toHaveProperty('bg')
       expect(withDiff!.diff[0]).toHaveProperty('sign')
+
+      const find = (sign: string) => withDiff!.diff.find((d) => d.sign === sign)
+      const hunk = withDiff!.diff.find((d) => d.code.startsWith('@@'))
+      const added = withDiff!.diff.find((d) => d.code === 'added line')
+      const removed = withDiff!.diff.find((d) => d.code === 'removed line')
+
+      // Added rows: green add background + a literal "+" sign.
+      expect(added).toBeDefined()
+      expect(added!.bg).toBe('var(--pi-diff-add-bg)')
+      expect(added!.sign).toBe('+')
+
+      // Removed rows: red delete background + a U+2212 minus sign (not ASCII "-").
+      expect(removed).toBeDefined()
+      expect(removed!.bg).toBe('var(--pi-diff-del-bg)')
+      expect(removed!.sign).toBe('−')
+
+      // Hunk headers: hunk background + an empty sign.
+      expect(hunk).toBeDefined()
+      expect(hunk!.bg).toBe('var(--pi-diff-hunk-bg)')
+      expect(hunk!.sign).toBe('')
+
+      // The "+" lookup and the explicit added row agree.
+      expect(find('+')).toBe(added)
     }
   })
 

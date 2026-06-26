@@ -8,7 +8,8 @@ import { SessionTree } from './SessionTree'
 
 const sessions = new MockPiService().listSessions()
 // s1 has a rich tree: root, current, bookmark, and a branch node with canRewind.
-const richSession = sessions.find((s) => s.tree.some((n) => n.canRewind)) as Session
+const richSession = sessions.find((s) => s.tree.some((n) => n.canRewind))
+if (!richSession) throw new Error('expected a seeded session with a rewindable tree node')
 
 function setup(session: Session = richSession) {
   const onClose = vi.fn()
@@ -66,7 +67,8 @@ describe('SessionTree', () => {
   })
 
   it('renders without a rewind button when no node is rewindable', () => {
-    const plain = sessions.find((s) => s.tree.length > 0 && !s.tree.some((n) => n.canRewind)) as Session
+    const plain = sessions.find((s) => s.tree.length > 0 && !s.tree.some((n) => n.canRewind))
+    if (!plain) throw new Error('expected a seeded session with a non-rewindable tree')
     setup(plain)
     expect(screen.queryByRole('button', { name: /rewind & branch here/i })).toBeNull()
   })

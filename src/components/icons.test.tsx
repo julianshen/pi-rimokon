@@ -83,9 +83,10 @@ describe('SVG icons', () => {
   })
 
   it('exports exactly the expected set of named members', () => {
-    // 25 svg icons + PiMark
-    expect(Object.keys(Icons).sort()).toHaveLength(svgIcons.length + 1)
-    expect(Object.keys(Icons)).toContain('PiMark')
+    // The module's named exports are exactly the SVG icons plus PiMark.
+    expect(Object.keys(Icons).sort()).toEqual(
+      [...svgIcons.map(([name]) => name), 'PiMark'].sort(),
+    )
   })
 })
 

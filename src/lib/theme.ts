@@ -47,15 +47,25 @@ export function systemPrefersDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
-/** Read the persisted theme mode, defaulting to "system" when absent/invalid. */
+/** Read the persisted theme mode, defaulting to "system" when absent/invalid.
+ *  Storage access can throw (private mode / sandboxed iframe); fall back to
+ *  "system" rather than crashing the initial render. */
 export function readStoredMode(): ThemeMode {
-  const stored = localStorage.getItem(THEME_STORAGE_KEY)
-  return stored && (THEME_MODES as string[]).includes(stored) ? (stored as ThemeMode) : 'system'
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    return stored && (THEME_MODES as string[]).includes(stored) ? (stored as ThemeMode) : 'system'
+  } catch {
+    return 'system'
+  }
 }
 
-/** Persist the chosen theme mode. */
+/** Persist the chosen theme mode (no-op if storage is blocked). */
 export function storeMode(mode: ThemeMode): void {
-  localStorage.setItem(THEME_STORAGE_KEY, mode)
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode)
+  } catch {
+    // Storage unavailable (privacy mode / sandboxed iframe): theme just won't persist.
+  }
 }
 
 /** Apply the resolved theme by setting `data-theme` on <html>. */

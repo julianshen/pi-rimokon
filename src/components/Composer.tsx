@@ -120,7 +120,7 @@ export function Composer({
               >
                 <QueueIcon size={12} style={{ flex: 'none' }} />
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q}</span>
-                <button onClick={() => onRemoveQueued(i)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--pi-amber-deep)', display: 'flex', padding: 0 }}>
+                <button aria-label={`Remove queued item: ${q}`} onClick={() => onRemoveQueued(i)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--pi-amber-deep)', display: 'flex', padding: 0 }}>
                   <CloseIcon size={13} strokeWidth={2.2} />
                 </button>
               </span>

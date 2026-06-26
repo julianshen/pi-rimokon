@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
@@ -30,6 +30,12 @@ describe('MobileTopBar', () => {
 })
 
 describe('MobileNavDrawer', () => {
+  beforeEach(() => {
+    // Start each test from a known light theme regardless of run order.
+    localStorage.clear()
+    document.documentElement.removeAttribute('data-theme')
+  })
+
   function renderDrawer() {
     const onClose = vi.fn()
     const onHome = vi.fn()

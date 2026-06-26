@@ -38,19 +38,26 @@ describe('App', () => {
     // Below MOBILE_BREAKPOINT (860): sidebar is hidden, the mobile top bar shows.
     setViewport(600)
     renderApp()
-    expect(screen.getByText('Pi Remote')).toBeInTheDocument()
+    // The desktop Sidebar renders an "Active sessions" section label; the mobile
+    // top bar does not (and the nav drawer is closed initially). Its absence is a
+    // mobile-only signal that the breakpoint switched.
+    expect(screen.queryByText('Active sessions')).toBeNull()
+    // The Home screen heading still renders in the mobile layout.
     expect(screen.getByRole('heading', { name: 'Sessions' })).toBeInTheDocument()
   })
 
   it('reacts to a viewport resize without throwing', () => {
     setViewport(1280)
     renderApp()
-    expect(screen.getByText('Pi Remote')).toBeInTheDocument()
+    // At desktop width the Sidebar's "Active sessions" label is present.
+    expect(screen.getByText('Active sessions')).toBeInTheDocument()
     act(() => {
       setViewport(600)
       window.dispatchEvent(new Event('resize'))
     })
-    // Still rendering the shell after collapsing to mobile.
+    // After collapsing to mobile the desktop sidebar (and its label) is gone,
+    // proving the breakpoint actually switched; the shell heading still renders.
+    expect(screen.queryByText('Active sessions')).toBeNull()
     expect(screen.getByRole('heading', { name: 'Sessions' })).toBeInTheDocument()
   })
 

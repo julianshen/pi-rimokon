@@ -88,6 +88,7 @@ export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClos
           <button
             className="pi-hover-soft2"
             onClick={onClose}
+            aria-label="Close work panel"
             style={{ width: 30, height: 30, border: 'none', borderRadius: 8, background: 'var(--pi-paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <CloseIcon size={16} stroke="var(--pi-text-soft)" />

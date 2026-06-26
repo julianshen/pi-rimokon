@@ -78,7 +78,17 @@ describe('ToolCard', () => {
 
     const { container } = render(<ToolCard tool={running} />)
     expect(running.done).toBe(false)
-    // A running tool does not render its completed meta text.
-    expect(container.querySelector('svg')).toBeInTheDocument()
+
+    // The spinner is rendered as a second <svg> carrying the `pi-spin` animation
+    // (the first <svg> is the tool's glyph). Asserting the animated one is present
+    // proves the running indicator shows, not just any icon.
+    expect(container.querySelector('svg[style*="pi-spin"]')).toBeTruthy()
+    expect(container.querySelectorAll('svg')).toHaveLength(2)
+
+    // A running tool does not render its completed meta text (rendering is gated
+    // on `done`). The seeded running tool carries a `meta`, so its absence is a
+    // real signal — not vacuously true.
+    expect(running.meta).toBeTruthy()
+    expect(screen.queryByText(running.meta as string)).toBeNull()
   })
 })

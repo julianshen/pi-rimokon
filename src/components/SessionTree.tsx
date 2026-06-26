@@ -42,6 +42,7 @@ export function SessionTree({ session, onClose, onRewind }: SessionTreeProps) {
           <button
             className="pi-hover-fill"
             onClick={onClose}
+            aria-label="Close session tree"
             style={{ width: 30, height: 30, border: 'none', borderRadius: 8, background: 'var(--pi-border-hair)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <CloseIcon size={16} stroke="var(--pi-text-soft)" />

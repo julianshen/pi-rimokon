@@ -7,12 +7,16 @@ import type { Session } from '../lib/types'
 import { SessionScreen } from './SessionScreen'
 
 const sessions = new MockPiService().listSessions()
-const byStatus = (status: Session['status']) =>
-  sessions.find((s) => s.status === status) as Session
+const byStatus = (status: Session['status']): Session => {
+  const sess = sessions.find((s) => s.status === status)
+  if (!sess) throw new Error(`expected a seeded session with status "${status}"`)
+  return sess
+}
 
 // Pick sessions with varied status to exercise distinct branches.
 // A non-live "working" session renders the working bar + Stop button (see buildThreadView).
-const workingSession = sessions.find((s) => s.status === 'working' && !s.live) as Session
+const workingSession = sessions.find((s) => s.status === 'working' && !s.live)
+if (!workingSession) throw new Error('expected a seeded non-live working session')
 const reviewSession = byStatus('review') // changes present -> "Review changes" CTA
 const waitingSession = byStatus('waiting') // thread asks a question -> option buttons
 
