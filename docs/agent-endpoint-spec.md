@@ -17,8 +17,8 @@ scope = **agent endpoint + broker + web client**.
 > **Alternative transport:** since Vercel now serves WebSockets on Fluid compute, there is a
 > sibling design that hosts `/agent` on Vercel itself (no standalone service) —
 > [`agent-endpoint-spec-vercel.md`](./agent-endpoint-spec-vercel.md). Auth, the Pi RPC envelope,
-> framing, and broker ownership rules are shared; only the transport host differs. See its §10
-> for the trade-off matrix.
+> framing, and broker ownership rules are shared; only the transport host differs. See the
+> [side-by-side comparison](./agent-endpoint-comparison.md) for the full trade-off breakdown.
 
 ---
 

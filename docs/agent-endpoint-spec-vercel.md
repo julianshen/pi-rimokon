@@ -151,6 +151,9 @@ a separate `agents.*` host — which also sidesteps cross-origin concerns on the
 
 ## 10. Trade-offs — standalone Node server vs Vercel WebSockets
 
+> A fuller, dimension-by-dimension breakdown lives in
+> [`agent-endpoint-comparison.md`](./agent-endpoint-comparison.md). Quick matrix:
+
 | Dimension | Standalone Node server (base spec) | Vercel WebSockets (this spec) |
 |---|---|---|
 | **Ops surface** | A second service to deploy, scale, monitor, secure | None — same Vercel project as the SPA |
