@@ -14,6 +14,12 @@ Decisions locked for this spec: standalone **Node WebSocket server**; **custom R
 device flow issuing **app-scoped, revocable agent tokens** bound to the Supabase user;
 scope = **agent endpoint + broker + web client**.
 
+> **Alternative transport:** since Vercel now serves WebSockets on Fluid compute, there is a
+> sibling design that hosts `/agent` on Vercel itself (no standalone service) —
+> [`agent-endpoint-spec-vercel.md`](./agent-endpoint-spec-vercel.md). Auth, the Pi RPC envelope,
+> framing, and broker ownership rules are shared; only the transport host differs. See its §10
+> for the trade-off matrix.
+
 ---
 
 ## 1. Background & constraints
@@ -57,10 +63,16 @@ approves it inside Pi Remote (already signed in via Supabase), the **agent** pol
 
 ### 3.1 Endpoints (HTTPS on the server)
 
-**`POST /oauth/device/code`** — agent starts authorization.
+**`POST /oauth/device/code`** — agent starts authorization. Per RFC 8628 / OAuth 2.0, requests
+to the device-authorization and token endpoints are **`application/x-www-form-urlencoded`** (so
+standard OAuth client libraries work); responses are JSON.
+```http
+POST /oauth/device/code HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+client_id=pi-agent-cli&scope=agent
+```
 ```jsonc
-// request
-{ "client_id": "pi-agent-cli", "scope": "agent" }
 // 200 response (RFC 8628 §3.2)
 {
   "device_code": "<opaque, high-entropy>",
@@ -74,7 +86,8 @@ approves it inside Pi Remote (already signed in via Supabase), the **agent** pol
 
 **User approval (web):** the user opens `verification_uri[_complete]` in Pi Remote. A new
 `/device` route shows the agent details + `user_code` and an **Authorize / Deny** choice.
-On approve the SPA calls (with the Supabase session):
+On approve the SPA calls (with the Supabase session). This is **our own** endpoint — RFC 8628
+leaves the verification interaction undefined — so it takes JSON rather than form encoding:
 ```jsonc
 // POST /oauth/device/approve   Authorization: Bearer <supabase_jwt>
 { "user_code": "WDJB-MJHT", "decision": "approve" }   // or "deny"
@@ -82,11 +95,12 @@ On approve the SPA calls (with the Supabase session):
 The server verifies the Supabase JWT (issuer/audience/exp via the project JWKS), finds the
 pending device code by `user_code`, and binds `user_id = jwt.sub` (or marks it denied).
 
-**`POST /oauth/device/token`** — agent polls (RFC 8628 §3.4).
-```jsonc
-// request
-{ "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-  "device_code": "<…>", "client_id": "pi-agent-cli" }
+**`POST /oauth/device/token`** — agent polls (RFC 8628 §3.4); form-encoded like `device/code`.
+```http
+POST /oauth/device/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=<…>&client_id=pi-agent-cli
 ```
 Responses:
 | State | HTTP | Body |
@@ -106,7 +120,9 @@ Responses:
   `grant_type=refresh_token`. Rotation detects reuse (revoke the family on replay).
 - **Revocation:** every token maps to an `agent_tokens` row (`jti`/family). A user can
   revoke an agent from Pi Remote (Settings → Agents); the server checks revocation on every
-  connect and refresh. `POST /oauth/revoke` supported.
+  connect and refresh **and tears down live sessions immediately** — on revoke it looks up the
+  matching `agent_sessions` (by `jti`/`family_id`) and closes those sockets with **4403** rather
+  than waiting for the next reconnect. `POST /oauth/revoke` supported.
 
 ## 4. Agent WebSocket — `wss://<host>/agent`
 
@@ -136,7 +152,15 @@ handshake of its own):
 { "type":"ready", "session_id":"ses_01J…" }
 ```
 A token may also be supplied in `hello.token` as a fallback for clients that cannot set the
-upgrade header. Unknown `protocol` major → `success:false`, then close **4400**.
+upgrade header. Because that lets a socket open *before* it has authenticated, the server
+enforces a **handshake timeout** (~5 s): a connection that hasn't completed a valid `hello`
+within the window is closed (**4408**), bounding idle/unauthenticated-socket DoS. Unknown
+`protocol` major → `success:false`, then close **4400**.
+
+> **Direction note.** `hello` (and `resume`, §4.3) invert §4.2's normal flow — here the *agent*
+> sends a command-shaped frame and the *server* replies. Treat these as a **pre-routing
+> exception** handled by the connection manager *before* the session is registered with the
+> broker, so the §5.3 routing rules never see them and cannot block or misroute them.
 
 ### 4.2 Framing
 
@@ -166,7 +190,7 @@ upgrade header. Unknown `protocol` major → `success:false`, then close **4400*
 | 4400 | protocol error / bad frame / unsupported version |
 | 4401 | unauthorized (missing/invalid/expired token) |
 | 4403 | forbidden (token revoked, or session not owned by user) |
-| 4408 | idle / heartbeat timeout |
+| 4408 | idle / heartbeat timeout / handshake not completed in time |
 | 4409 | duplicate session (same agent token already connected, if single-session enforced) |
 | 4413 | frame too large |
 | 1011 | internal server error |
@@ -196,8 +220,8 @@ to address a target. The inner payload is a pure Pi record:
 { "type":"tool_execution_update","session_id":"ses_01J…","seq":43, …fields }
 ```
 Plus broker-level events the agent never sees:
-- `{"type":"sessions","sessions":[{ "session_id","repo","status","agent":{…},"last_seq" }]}` (snapshot on connect)
-- `{"type":"session_online","session_id",…}` / `{"type":"session_offline","session_id","reason"}`
+- `{"type":"sessions","sessions":[{ "session_id":"<id>","repo":"<name>","status":"<status>","agent":{…},"last_seq":0 }]}` (snapshot on connect)
+- `{"type":"session_online","session_id":"<id>",…}` / `{"type":"session_offline","session_id":"<id>","reason":"<str>"}`
 
 ### 5.3 Routing rules (broker)
 
