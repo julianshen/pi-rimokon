@@ -10,12 +10,12 @@ export function ToolCard({ tool }: { tool: ToolView }) {
             <path d={tool.icon} />
           </svg>
         </span>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 600, color: '#5c594f' }}>{tool.verb}</span>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 600, color: 'var(--pi-text-soft)' }}>{tool.verb}</span>
         <span
           style={{
             fontFamily: "'JetBrains Mono',monospace",
             fontSize: 12,
-            color: '#33312c',
+            color: 'var(--pi-text-body)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -27,11 +27,11 @@ export function ToolCard({ tool }: { tool: ToolView }) {
         </span>
         {tool.running && <SpinnerIcon size={13} />}
         {tool.done && tool.meta && (
-          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#8a8678', flex: 'none' }}>{tool.meta}</span>
+          <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-text-faint)', flex: 'none' }}>{tool.meta}</span>
         )}
       </div>
       {tool.hasDiff && (
-        <div style={{ borderTop: '1px solid #f0ede4', padding: '7px 0', background: '#fbfaf6', borderRadius: '0 0 10px 10px', overflowX: 'auto' }}>
+        <div style={{ borderTop: '1px solid var(--pi-border-hair)', padding: '7px 0', background: 'var(--pi-surface-muted2)', borderRadius: '0 0 10px 10px', overflowX: 'auto' }}>
           {tool.diff.map((d, i) => (
             <div
               key={i}

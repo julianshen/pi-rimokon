@@ -23,8 +23,8 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: '#cdc8ba',
-                color: '#5c594f',
+                background: 'var(--pi-avatar-bg)',
+                color: 'var(--pi-text-soft)',
                 fontSize: 11,
                 fontWeight: 700,
                 display: 'flex',
@@ -46,8 +46,8 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                       fontSize: 9.5,
                       letterSpacing: '.05em',
                       textTransform: 'uppercase',
-                      color: '#b9772a',
-                      background: '#f6ecdb',
+                      color: 'var(--pi-amber)',
+                      background: 'var(--pi-amber-soft)',
                       padding: '2px 6px',
                       borderRadius: 5,
                     }}
@@ -56,7 +56,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                   </span>
                 )}
               </div>
-              <div style={{ background: '#fff', border: '1px solid #e6e2d6', borderRadius: 12, padding: '11px 14px', fontSize: 14.5, lineHeight: 1.55, color: '#33312c' }}>
+              <div style={{ background: 'var(--pi-surface)', border: '1px solid var(--pi-border-card)', borderRadius: 12, padding: '11px 14px', fontSize: 14.5, lineHeight: 1.55, color: 'var(--pi-text-body)' }}>
                 {m.text}
               </div>
             </div>
@@ -67,7 +67,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 7 }}>Pi</div>
 
-              {m.intro && <div style={{ fontSize: 14.5, lineHeight: 1.6, color: '#33312c', marginBottom: 12 }}>{m.intro}</div>}
+              {m.intro && <div style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--pi-text-body)', marginBottom: 12 }}>{m.intro}</div>}
 
               {m.tools.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 13 }}>
@@ -80,7 +80,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
               {m.genui && <GenUIBlock genui={m.genui} dark={genuiTheme === 'dark'} onToggleTheme={onToggleGenuiTheme} />}
 
               {m.text && (
-                <div style={{ fontSize: 14.5, lineHeight: 1.62, color: '#33312c' }}>
+                <div style={{ fontSize: 14.5, lineHeight: 1.62, color: 'var(--pi-text-body)' }}>
                   {m.text}
                   {m.cursor && (
                     <span
@@ -88,7 +88,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                         display: 'inline-block',
                         width: 8,
                         height: 16,
-                        background: '#1f8a5b',
+                        background: 'var(--pi-green)',
                         marginLeft: 2,
                         verticalAlign: -2,
                         animation: 'pi-blink 1s step-end infinite',
@@ -105,7 +105,7 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                       key={o}
                       className="pi-hover-option"
                       onClick={() => onPickOption(o)}
-                      style={{ padding: '8px 13px', border: '1px solid #d8d4c9', borderRadius: 9, background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: '#33312c' }}
+                      style={{ padding: '8px 13px', border: '1px solid var(--pi-scrollbar)', borderRadius: 9, background: 'var(--pi-surface)', fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--pi-text-body)' }}
                     >
                       {o}
                     </button>
@@ -122,17 +122,17 @@ export function Thread({ items, genuiTheme, onToggleGenuiTheme, onPickOption, on
                     gap: 10,
                     flexWrap: 'wrap',
                     padding: '13px 14px',
-                    background: '#e6f2eb',
-                    border: '1px solid #bfe0cc',
+                    background: 'var(--pi-green-soft)',
+                    border: '1px solid var(--pi-green)',
                     borderRadius: 12,
                   }}
                 >
-                  <CheckIcon size={18} stroke="#1f8a5b" strokeWidth={2} style={{ flex: 'none' }} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1c5c3e', flex: 1, minWidth: 120 }}>{m.reviewLabel}</span>
+                  <CheckIcon size={18} strokeWidth={2} style={{ flex: 'none', color: 'var(--pi-green)' }} />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--pi-green-deep)', flex: 1, minWidth: 120 }}>{m.reviewLabel}</span>
                   <button
                     className="pi-hover-green"
                     onClick={onReview}
-                    style={{ padding: '8px 14px', border: 'none', borderRadius: 9, background: '#1f8a5b', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ padding: '8px 14px', border: 'none', borderRadius: 9, background: 'var(--pi-green)', color: 'var(--pi-on-ink)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                   >
                     Review changes
                   </button>

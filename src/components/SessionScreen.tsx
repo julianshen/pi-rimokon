@@ -49,17 +49,17 @@ export function SessionScreen(props: SessionScreenProps) {
           alignItems: 'center',
           gap: 12,
           padding: '13px 20px',
-          borderBottom: '1px solid #e6e2d6',
-          background: 'rgba(244,242,236,.85)',
+          borderBottom: '1px solid var(--pi-border-card)',
+          background: 'rgba(var(--pi-paper-rgb), .85)',
           backdropFilter: 'blur(6px)',
         }}
       >
         {mobile && (
           <button
             onClick={props.onGoHome}
-            style={{ width: 32, height: 32, border: '1px solid #e2ded3', borderRadius: 8, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ width: 32, height: 32, border: '1px solid var(--pi-border)', borderRadius: 8, background: 'var(--pi-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
-            <ChevronLeft size={17} stroke="#1b1b1d" />
+            <ChevronLeft size={17} stroke="var(--pi-text)" />
           </button>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -72,7 +72,7 @@ export function SessionScreen(props: SessionScreenProps) {
               {session.title}
             </h2>
           </div>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#8a8678', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-text-faint)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {session.repo} · {session.branch}
           </div>
         </div>
@@ -82,11 +82,11 @@ export function SessionScreen(props: SessionScreenProps) {
           <button
             className="pi-hover-border"
             onClick={props.onToggleModelMenu}
-            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: '1px solid #e2ded3', borderRadius: 9, background: '#fff', cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 10px', border: '1px solid var(--pi-border)', borderRadius: 9, background: 'var(--pi-surface)', cursor: 'pointer', fontSize: 12.5, fontWeight: 600 }}
           >
-            <ClockIcon size={14} stroke="#1f8a5b" strokeWidth={2} />
+            <ClockIcon size={14} stroke="var(--pi-green)" strokeWidth={2} />
             {!mobile && <span>{modelLabel(props.model)}</span>}
-            <ChevronDown size={13} stroke="#8a8678" />
+            <ChevronDown size={13} stroke="var(--pi-text-faint)" />
           </button>
           {props.modelMenu && <ModelMenu model={props.model} onPick={props.onPickModel} />}
         </div>
@@ -95,9 +95,9 @@ export function SessionScreen(props: SessionScreenProps) {
           className="pi-hover-border"
           onClick={props.onToggleTree}
           title="Session tree"
-          style={{ width: 34, height: 34, flex: 'none', border: '1px solid #e2ded3', borderRadius: 9, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          style={{ width: 34, height: 34, flex: 'none', border: '1px solid var(--pi-border)', borderRadius: 9, background: 'var(--pi-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
         >
-          <TreeIcon size={17} stroke="#5c594f" />
+          <TreeIcon size={17} stroke="var(--pi-text-soft)" />
         </button>
         <button
           className="pi-hover-border"
@@ -107,10 +107,10 @@ export function SessionScreen(props: SessionScreenProps) {
             width: 34,
             height: 34,
             flex: 'none',
-            border: '1px solid #e2ded3',
+            border: '1px solid var(--pi-border)',
             borderRadius: 9,
-            background: props.rightOpen ? '#1b1b1d' : '#fff',
-            color: props.rightOpen ? '#f4f2ec' : '#5c594f',
+            background: props.rightOpen ? 'var(--pi-ink-surface)' : 'var(--pi-surface)',
+            color: props.rightOpen ? 'var(--pi-on-ink)' : 'var(--pi-text-soft)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

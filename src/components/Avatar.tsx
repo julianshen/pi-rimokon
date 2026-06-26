@@ -26,8 +26,8 @@ export function Avatar({ url, initials, size = 32 }: { url: string | null; initi
     <div
       style={{
         ...base,
-        background: '#cdc8ba',
-        color: '#5c594f',
+        background: 'var(--pi-avatar-bg)',
+        color: 'var(--pi-text-soft)',
         fontSize: Math.round(size * 0.38),
         fontWeight: 700,
         display: 'flex',

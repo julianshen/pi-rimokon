@@ -22,7 +22,7 @@ function Splash() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f4f2ec',
+        background: 'var(--pi-paper)',
       }}
     >
       <div style={{ animation: 'pi-pulse 1.4s infinite' }}>

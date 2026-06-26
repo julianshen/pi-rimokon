@@ -2,6 +2,7 @@ import type { Session } from '../lib/types'
 import { dotStyle, statusOf } from '../lib/theme'
 import { LogoutIcon, MenuIcon, PiMark } from './icons'
 import { Avatar } from './Avatar'
+import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '../hooks/useAuth'
 
 interface TopBarProps {
@@ -16,8 +17,8 @@ export function MobileTopBar({ onToggleNav }: TopBarProps) {
         alignItems: 'center',
         gap: 12,
         padding: '12px 14px',
-        borderBottom: '1px solid #e2ded3',
-        background: '#efece4',
+        borderBottom: '1px solid var(--pi-border)',
+        background: 'var(--pi-sidebar)',
         flex: 'none',
       }}
     >
@@ -26,16 +27,16 @@ export function MobileTopBar({ onToggleNav }: TopBarProps) {
         style={{
           width: 36,
           height: 36,
-          border: '1px solid #e2ded3',
+          border: '1px solid var(--pi-border)',
           borderRadius: 9,
-          background: '#fff',
+          background: 'var(--pi-surface)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
         }}
       >
-        <MenuIcon size={18} stroke="#1b1b1d" />
+        <MenuIcon size={18} stroke="var(--pi-text)" />
       </button>
       <PiMark tile={26} font={15} radius={7} />
       <span style={{ fontSize: 15, fontWeight: 700 }}>Pi Remote</span>
@@ -64,11 +65,11 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
           left: 0,
           bottom: 0,
           width: 280,
-          background: '#efece4',
+          background: 'var(--pi-sidebar)',
           zIndex: 61,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '16px 0 50px rgba(40,36,28,.18)',
+          boxShadow: '16px 0 50px rgba(var(--pi-shadow-rgb),.18)',
           animation: 'pi-slide .2s ease',
         }}
       >
@@ -88,7 +89,7 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
             Settings
           </button>
         </div>
-        <div style={{ padding: '6px 16px 8px', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#9b9788' }}>
+        <div style={{ padding: '6px 16px 8px', fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--pi-text-fainter)' }}>
           Active sessions
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px' }}>
@@ -111,14 +112,14 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
         </div>
 
         {/* Profile footer — signed-in account + sign-out. */}
-        <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid #e2ded3', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginTop: 'auto', padding: '12px 14px', borderTop: '1px solid var(--pi-border)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar url={profile?.avatarUrl ?? null} initials={profile?.initials ?? '··'} size={34} />
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, minWidth: 0, flex: 1 }}>
             <span style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {profile?.name ?? 'Account'}
             </span>
             {profile?.email && (
-              <span style={{ fontSize: 12, color: '#9b9788', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, color: 'var(--pi-text-fainter)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {profile.email}
               </span>
             )}
@@ -138,12 +139,13 @@ export function MobileNavDrawer({ sessions, onClose, onHome, onSettings, onOpenS
               border: 'none',
               borderRadius: 9,
               background: 'transparent',
-              color: '#76736b',
+              color: 'var(--pi-text-muted)',
               cursor: 'pointer',
             }}
           >
             <LogoutIcon size={17} />
           </button>
+          <ThemeToggle />
         </div>
       </aside>
     </>

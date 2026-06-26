@@ -186,7 +186,7 @@ export function RewindIcon({ size = 12, ...p }: IconProps) {
 
 export function BookmarkIcon({ size = 13, ...p }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="#b9772a" stroke="none" {...p}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--pi-amber)" stroke="none" {...p}>
       <path d="M6 3h12v18l-6-4-6 4z" />
     </svg>
   )
@@ -196,7 +196,7 @@ export function SpinnerIcon({ size = 13, ...p }: IconProps) {
   return (
     <svg
       {...svgBase(size, p)}
-      stroke="#b9772a"
+      stroke="var(--pi-amber)"
       strokeWidth={2.4}
       strokeLinecap="round"
       style={{ animation: 'pi-spin .8s linear infinite', flex: 'none', ...(p.style || {}) }}
@@ -226,6 +226,23 @@ export function GitHubIcon({ size = 18, ...p }: IconProps) {
   )
 }
 
+export function MoonIcon({ size = 16, ...p }: IconProps) {
+  return (
+    <svg {...svgBase(size, p)} stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  )
+}
+
+export function SunIcon({ size = 16, ...p }: IconProps) {
+  return (
+    <svg {...svgBase(size, p)} stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  )
+}
+
 // The π monogram tile used in the brand mark and the agent avatar.
 export function PiMark({ tile = 30, font = 18, radius = 8 }: { tile?: number; font?: number; radius?: number }) {
   return (
@@ -234,7 +251,7 @@ export function PiMark({ tile = 30, font = 18, radius = 8 }: { tile?: number; fo
         width: tile,
         height: tile,
         borderRadius: radius,
-        background: '#1b1b1d',
+        background: 'var(--pi-logo-bg)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -244,7 +261,7 @@ export function PiMark({ tile = 30, font = 18, radius = 8 }: { tile?: number; fo
       <span
         style={{
           fontFamily: "'JetBrains Mono',monospace",
-          color: '#f4f2ec',
+          color: 'var(--pi-logo-fg)',
           fontSize: font,
           fontWeight: 600,
           lineHeight: 1,

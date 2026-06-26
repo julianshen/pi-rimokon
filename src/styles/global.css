@@ -1,4 +1,132 @@
-/* Base styles + keyframes ported verbatim from the Pi Remote design prototype. */
+/* Base styles + keyframes ported from the Pi Remote design prototype.
+   The palette is expressed as CSS variables so a single `data-theme` switch on
+   <html> (driven by useTheme) repaints the whole app for light/dark. */
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  /* surfaces */
+  --pi-paper: #f4f2ec;
+  --pi-paper-rgb: 244, 242, 236; /* for translucent paper (blurred headers) */
+  --pi-shadow-rgb: 40, 36, 28; /* base for box-shadows */
+  --pi-sidebar: #efece4;
+  --pi-surface: #ffffff;
+  --pi-surface-muted: #faf8f2;
+  --pi-surface-muted2: #fbfaf6;
+  --pi-surface-alt: #f2efe7;
+  /* borders */
+  --pi-border: #e2ded3;
+  --pi-border-card: #e6e2d6;
+  --pi-border-hair: #f0ede4;
+  --pi-border-strong: #cfc9ba;
+  --pi-border-hover: #c4bfb0;
+  /* text */
+  --pi-text: #1b1b1d;
+  --pi-text-body: #33312c;
+  --pi-text-soft: #5c594f;
+  --pi-text-muted: #76736b;
+  --pi-text-faint: #8a8678;
+  --pi-text-fainter: #9b9788;
+  --pi-text-context: #6b6862;
+  /* accents */
+  --pi-green: #1f8a5b;
+  --pi-green-dark: #1a7850;
+  --pi-green-soft: #e6f2eb;
+  --pi-green-deep: #1c5c3e;
+  --pi-amber: #b9772a;
+  --pi-amber-soft: #f6ecdb;
+  --pi-amber-deep: #7a5417;
+  --pi-blue: #2f6db0;
+  --pi-blue-soft: #e7eef7;
+  --pi-purple: #7a5bd6;
+  --pi-purple-soft: #efeafb;
+  --pi-red: #c0432f;
+  --pi-red-deep: #b23a28;
+  --pi-red-soft: #f7e7e3;
+  --pi-red-border: #e0b3a8;
+  /* diff */
+  --pi-diff-add-bg: #e9f5ee;
+  --pi-diff-add-fg: #1c6b44;
+  --pi-diff-del-bg: #fbeae5;
+  --pi-diff-del-fg: #a8331f;
+  --pi-diff-hunk-bg: #f1edfb;
+  --pi-diff-hunk-fg: #6a4cc0;
+  /* misc */
+  --pi-avatar-bg: #cdc8ba;
+  --pi-scrollbar: #d8d4c9;
+  --pi-scrollbar-hover: #c4bfb0;
+  --pi-selection: #cfe6d8;
+  --pi-overlay: rgba(27, 27, 29, 0.3);
+  --pi-logo-bg: #1b1b1d;
+  --pi-logo-fg: #f4f2ec;
+  /* primary / "ink" buttons: high-contrast solid (inverts in dark) */
+  --pi-ink-surface: #1b1b1d;
+  --pi-on-ink: #f4f2ec;
+  --pi-ink-hover: #000000; /* hover for ink/primary buttons (keeps on-ink text readable) */
+  --pi-stop-hover: #2a2a2d; /* hover for the Stop button on the working banner */
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  /* surfaces */
+  --pi-paper: #14161b;
+  --pi-paper-rgb: 20, 22, 27;
+  --pi-shadow-rgb: 0, 0, 0;
+  --pi-sidebar: #191c22;
+  --pi-surface: #1d2027;
+  --pi-surface-muted: #23272f;
+  --pi-surface-muted2: #21262d;
+  --pi-surface-alt: #20242b;
+  /* borders */
+  --pi-border: #2c313b;
+  --pi-border-card: #2c313b;
+  --pi-border-hair: #242831;
+  --pi-border-strong: #3a414d;
+  --pi-border-hover: #4a515e;
+  /* text */
+  --pi-text: #f3f1ea;
+  --pi-text-body: #ddd9d0;
+  --pi-text-soft: #b3afa3;
+  --pi-text-muted: #948f84;
+  --pi-text-faint: #807d74;
+  --pi-text-fainter: #706e65;
+  --pi-text-context: #8f8c83;
+  /* accents — hues kept, lifted for contrast on dark */
+  --pi-green: #35c281;
+  --pi-green-dark: #2bab6f;
+  --pi-green-soft: #15311f;
+  --pi-green-deep: #8ad9af;
+  --pi-amber: #d8974a;
+  --pi-amber-soft: #382c18;
+  --pi-amber-deep: #e8d2a6;
+  --pi-blue: #69a4df;
+  --pi-blue-soft: #1a2738;
+  --pi-purple: #a991ea;
+  --pi-purple-soft: #272040;
+  --pi-red: #e06a54;
+  --pi-red-deep: #ea7460;
+  --pi-red-soft: #371f1b;
+  --pi-red-border: #6e3a30;
+  /* diff */
+  --pi-diff-add-bg: #15311f;
+  --pi-diff-add-fg: #80d6a4;
+  --pi-diff-del-bg: #371d18;
+  --pi-diff-del-fg: #f0a99a;
+  --pi-diff-hunk-bg: #272040;
+  --pi-diff-hunk-fg: #b9a6f0;
+  /* misc */
+  --pi-avatar-bg: #3a4049;
+  --pi-scrollbar: #363b45;
+  --pi-scrollbar-hover: #464d59;
+  --pi-selection: #1f4a35;
+  --pi-overlay: rgba(0, 0, 0, 0.6);
+  --pi-logo-bg: #f3f1ea;
+  --pi-logo-fg: #14161b;
+  --pi-ink-surface: #f3f1ea;
+  --pi-on-ink: #14161b;
+  --pi-ink-hover: #e4e1d9;
+  --pi-stop-hover: #e4e1d9;
+}
 
 * {
   box-sizing: border-box;
@@ -14,13 +142,13 @@ body,
 
 body {
   font-family: 'Hanken Grotesk', system-ui, sans-serif;
-  background: #f4f2ec;
-  color: #1b1b1d;
+  background: var(--pi-paper);
+  color: var(--pi-text);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: #cfe6d8;
+  background: var(--pi-selection);
 }
 
 textarea,
@@ -39,13 +167,13 @@ input:focus {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d8d4c9;
+  background: var(--pi-scrollbar);
   border-radius: 8px;
   border: 3px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c4bfb0;
+  background: var(--pi-scrollbar-hover);
   background-clip: content-box;
 }
 
@@ -107,53 +235,53 @@ input:focus {
 
 /* Hover affordances that the prototype expressed via style-hover attributes. */
 .pi-hover-border:hover {
-  border-color: #c4bfb0 !important;
+  border-color: var(--pi-border-hover) !important;
 }
 .pi-hover-row:hover {
-  background: #e6e2d6 !important;
+  background: var(--pi-border-card) !important;
 }
 .pi-hover-card:hover {
-  border-color: #cfc9ba !important;
-  box-shadow: 0 6px 20px rgba(40, 36, 28, 0.07) !important;
+  border-color: var(--pi-border-strong) !important;
+  box-shadow: 0 6px 20px rgba(var(--pi-shadow-rgb), 0.07) !important;
   transform: translateY(-1px);
 }
 .pi-hover-soft:hover {
-  background: #f4f2ec !important;
+  background: var(--pi-paper) !important;
 }
 .pi-hover-soft2:hover {
-  background: #f0ede4 !important;
+  background: var(--pi-border-hair) !important;
 }
 .pi-hover-fill:hover {
-  background: #e6e2d6 !important;
+  background: var(--pi-border-card) !important;
 }
 .pi-hover-opacity:hover {
   opacity: 0.88;
 }
 .pi-hover-ink:hover {
-  background: #000 !important;
+  background: var(--pi-ink-hover) !important;
 }
 .pi-hover-green:hover {
-  background: #1a7850 !important;
+  background: var(--pi-green-dark) !important;
 }
 .pi-hover-example:hover {
-  border-color: #cfc9ba !important;
-  background: #fbfaf6 !important;
+  border-color: var(--pi-border-strong) !important;
+  background: var(--pi-surface-muted2) !important;
 }
 .pi-hover-option:hover {
-  border-color: #7a5bd6 !important;
-  background: #f6f3fd !important;
+  border-color: var(--pi-purple) !important;
+  background: var(--pi-purple-soft) !important;
 }
 .pi-hover-reject:hover {
-  border-color: #e0b3a8 !important;
-  background: #fbf0ec !important;
+  border-color: var(--pi-red-border) !important;
+  background: var(--pi-red-soft) !important;
 }
 .pi-hover-rewind:hover {
-  border-color: #7a5bd6 !important;
-  color: #7a5bd6 !important;
+  border-color: var(--pi-purple) !important;
+  color: var(--pi-purple) !important;
 }
 .pi-hover-stop:hover {
-  background: #2a2a2d !important;
+  background: var(--pi-stop-hover) !important;
 }
 .pi-hover-soft2-row:hover {
-  background: #f0ede4 !important;
+  background: var(--pi-border-hair) !important;
 }

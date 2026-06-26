@@ -39,16 +39,18 @@ function tabStyle(active: boolean): React.CSSProperties {
     cursor: 'pointer',
     fontSize: 12.5,
     fontWeight: 600,
-    background: active ? '#1b1b1d' : 'transparent',
-    color: active ? '#f4f2ec' : '#76736b',
+    background: active ? 'var(--pi-ink-surface)' : 'transparent',
+    color: active ? 'var(--pi-on-ink)' : 'var(--pi-text-muted)',
   }
 }
 
+// The terminal pane is a fixed-dark surface in both themes, so its text uses
+// fixed light colors (themed vars would go dark-on-dark in dark mode).
 function terminalColor(line: string): string {
   if (line && line.startsWith('$')) return '#9fe3bd'
-  if (line && (line.includes('ERR') || line.includes('failed'))) return '#f0a99a'
+  if (line && (line.includes('ERR') || line.includes('failed'))) return '#e0b3a8'
   if (line && line.includes('✓')) return '#9fe3bd'
-  return '#cfccc2'
+  return '#cfc9ba'
 }
 
 export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClose }: WorkPanelProps) {
@@ -67,16 +69,16 @@ export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClos
           right: 0,
           bottom: 0,
           width: 'min(460px, 94vw)',
-          background: '#fff',
-          borderLeft: '1px solid #e2ded3',
+          background: 'var(--pi-surface)',
+          borderLeft: '1px solid var(--pi-border)',
           zIndex: 51,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-16px 0 50px rgba(40,36,28,.14)',
+          boxShadow: '-16px 0 50px rgba(var(--pi-shadow-rgb),.14)',
           animation: 'pi-slide .22s cubic-bezier(.2,.8,.2,1)',
         }}
       >
-        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '12px 14px', borderBottom: '1px solid #e6e2d6' }}>
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '12px 14px', borderBottom: '1px solid var(--pi-border-card)' }}>
           {(['files', 'diff', 'terminal'] as RightTab[]).map((k) => (
             <button key={k} onClick={() => onTab(k)} style={tabStyle(tab === k)}>
               {k === 'files' ? 'Files' : k === 'diff' ? 'Diff' : 'Terminal'}
@@ -86,9 +88,10 @@ export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClos
           <button
             className="pi-hover-soft2"
             onClick={onClose}
-            style={{ width: 30, height: 30, border: 'none', borderRadius: 8, background: '#f4f2ec', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            aria-label="Close work panel"
+            style={{ width: 30, height: 30, border: 'none', borderRadius: 8, background: 'var(--pi-paper)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
-            <CloseIcon size={16} stroke="#5c594f" />
+            <CloseIcon size={16} stroke="var(--pi-text-soft)" />
           </button>
         </div>
 
@@ -105,22 +108,22 @@ export function WorkPanel({ session, tab, diffIndex, onTab, onSelectDiff, onClos
                 <span style={{ flex: 1, minWidth: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.path}
                 </span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#1f8a5b' }}>+{c.add}</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#b23a28' }}>−{c.del}</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-green)' }}>+{c.add}</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--pi-red-deep)' }}>−{c.del}</span>
               </button>
             ))}
-            {changes.length === 0 && <div style={{ padding: '30px 16px', textAlign: 'center', color: '#9b9788', fontSize: 13 }}>No file changes yet.</div>}
+            {changes.length === 0 && <div style={{ padding: '30px 16px', textAlign: 'center', color: 'var(--pi-text-fainter)', fontSize: 13 }}>No file changes yet.</div>}
           </div>
         )}
 
         {tab === 'diff' && (
-          <div style={{ flex: 1, overflow: 'auto', background: '#fbfaf6' }}>
-            <div style={{ position: 'sticky', top: 0, background: '#fbfaf6', borderBottom: '1px solid #e6e2d6', padding: '10px 14px', fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 600 }}>
+          <div style={{ flex: 1, overflow: 'auto', background: 'var(--pi-surface-muted2)' }}>
+            <div style={{ position: 'sticky', top: 0, background: 'var(--pi-surface-muted2)', borderBottom: '1px solid var(--pi-border-card)', padding: '10px 14px', fontFamily: "'JetBrains Mono',monospace", fontSize: 12, fontWeight: 600 }}>
               {activeChange ? activeChange.path : ''}
             </div>
             {activeDiff.map((d, i) => (
               <div key={i} style={{ display: 'flex', fontFamily: "'JetBrains Mono',monospace", fontSize: 12, lineHeight: 1.8, background: d.bg }}>
-                <span style={{ width: 40, flex: 'none', textAlign: 'right', paddingRight: 10, color: '#bdb9ac', userSelect: 'none' }}>{d.ln}</span>
+                <span style={{ width: 40, flex: 'none', textAlign: 'right', paddingRight: 10, color: 'var(--pi-border-hover)', userSelect: 'none' }}>{d.ln}</span>
                 <span style={{ flex: 1, whiteSpace: 'pre', paddingRight: 14, color: d.fg }}>
                   <span style={{ opacity: 0.5 }}>{d.sign} </span>
                   {d.code}

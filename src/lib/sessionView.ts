@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { GenUI, Session, ThreadMessage, ToolCall } from './types'
-import { TOOL_META, toolIconBg, TOOL_ICON_PATH, type IconName } from './theme'
+import { TOOL_META, TOOL_ICON_PATH, type IconName } from './theme'
 
 // ---------------------------------------------------------------------------
 // Streaming model
@@ -67,10 +67,10 @@ export interface ThreadView {
 
 function diffLineView(d: { t: string; c: string }): DiffLineView {
   const map: Record<string, { bg: string; fg: string; sign: string }> = {
-    '+': { bg: '#e9f5ee', fg: '#1c6b44', sign: '+' },
-    '-': { bg: '#fbeae5', fg: '#a8331f', sign: '−' },
-    ' ': { bg: 'transparent', fg: '#6b6862', sign: ' ' },
-    '@': { bg: '#f1edfb', fg: '#6a4cc0', sign: '' },
+    '+': { bg: 'var(--pi-diff-add-bg)', fg: 'var(--pi-diff-add-fg)', sign: '+' },
+    '-': { bg: 'var(--pi-diff-del-bg)', fg: 'var(--pi-diff-del-fg)', sign: '−' },
+    ' ': { bg: 'transparent', fg: 'var(--pi-text-context)', sign: ' ' },
+    '@': { bg: 'var(--pi-diff-hunk-bg)', fg: 'var(--pi-diff-hunk-fg)', sign: '' },
   }
   const m = map[d.t] ?? map[' ']
   return { bg: m.bg, fg: m.fg, sign: m.sign, code: d.c, ln: '' }
@@ -95,12 +95,12 @@ function buildTool(t: ToolCall, running: boolean): ToolView {
       alignItems: 'center',
       justifyContent: 'center',
       color: meta.color,
-      background: toolIconBg(meta.color),
+      background: meta.bg,
     },
     cardStyle: {
-      border: `1px solid ${running ? '#e7d3ad' : '#e6e2d6'}`,
+      border: `1px solid ${running ? 'var(--pi-amber)' : 'var(--pi-border-card)'}`,
       borderRadius: 11,
-      background: running ? '#fdf9f0' : '#fff',
+      background: running ? 'var(--pi-surface-muted)' : 'var(--pi-surface)',
       overflow: 'hidden',
     },
     hasDiff: !!t.diff && done,
