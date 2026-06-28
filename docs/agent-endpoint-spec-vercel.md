@@ -129,8 +129,8 @@ a resume older than the retained window returns `success:false` and the client d
 
 ## 7. Data model deltas
 
-- **Postgres (Supabase):** unchanged from base §6 — `device_codes`, `agent_tokens`,
-  `agent_sessions`. `agent_sessions.last_seq` is still the durable high-water mark.
+- **Postgres (Supabase):** same tables as base §6 — `device_codes`, `agent_tokens`,
+  `refresh_tokens`, `agent_sessions`. `agent_sessions.last_seq` is still the durable high-water mark.
 - **Redis (new):** `sess:{id}` (event stream), `sess:{id}:cmd` (command stream),
   `ctrl:{id}` / `user:{uid}:ctrl` (control), `presence:{id}` (TTL heartbeat),
   `user:{uid}:sessions` (set), `ticket:{opaque}` (single-use `/client` ticket, short TTL),
@@ -140,9 +140,10 @@ a resume older than the retained window returns `success:false` and the client d
 ## 8. Frontend integration (same seam as base §8)
 
 Identical: a `WebSocketPiService implements PiService` behind `VITE_PI_SERVER_URL`, a `/device`
-approval route, and Settings → Agents. The only practical change is that `VITE_PI_SERVER_URL` can
-now point at the **same origin** as the SPA (e.g. `wss://pi-rimokon.vercel.app/client`) instead of
-a separate `agents.*` host — which also sidesteps cross-origin concerns on the ticket fetch.
+approval route, and Settings → Agents. As in base §8, `VITE_PI_SERVER_URL` is the `wss://` **origin**
+(the client appends `/client` and derives `https://` for REST). The only practical change is that it
+can now be the **same origin** as the SPA (e.g. `wss://pi-rimokon.vercel.app`, no path suffix)
+instead of a separate `agents.*` host — which also sidesteps cross-origin concerns (same-origin REST).
 
 ## 9. Phasing for this variant
 
