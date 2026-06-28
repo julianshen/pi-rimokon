@@ -86,7 +86,11 @@ client_id=pi-agent-cli&scope=agent
 ```
 
 **User approval (web):** the user opens `verification_uri[_complete]` in Pi Remote. A new
-`/device` route shows the agent details + `user_code` and an **Authorize / Deny** choice.
+`/device` route shows the agent details + `user_code` and an **Authorize / Deny** choice. If the
+user is **signed out**, `/device` must **preserve the `user_code` across sign-in** — today's
+`signInWith` redirects OAuth to `window.location.origin` (`src/hooks/useAuth.tsx`), which would drop
+`/device?code=…`; so the page stashes the code (e.g. `sessionStorage`) or sets `redirectTo` back to
+the full `/device?code=…` URL, then resumes approval once the Supabase session exists.
 On approve the SPA calls (with the Supabase session). This is **our own** endpoint — RFC 8628
 leaves the verification interaction undefined — so it takes JSON rather than form encoding:
 ```jsonc
@@ -181,8 +185,10 @@ within the window is closed (**4408**), bounding idle/unauthenticated-socket DoS
 
 ### 4.3 Ordering, heartbeats, resumption
 
-- Every agent→server **event** carries a monotonic `seq` (per session) for ordering and
-  replay. Responses are correlated by `id`.
+- A stock Pi process does **not** emit a sequence field, so the **server stamps a monotonic
+  `seq`** (per session) onto each agent→server `event` as it arrives; that enriched record is what
+  gets fanned out, persisted, and advances `agent_sessions.last_seq`. Responses are correlated by
+  `id` (which the agent *does* echo).
 - Keepalive: WebSocket **ping/pong** every `heartbeat_sec`; no pong within 2× → close **4408**.
 - **Reconnect/resume:** on reconnect the agent re-auths and may send
   `{"type":"resume","id":"r1","session_id":"ses_…","last_seq":42}`. If the server still holds
@@ -221,7 +227,9 @@ A web client talks to **many** of its agents, so the `/client` channel adds a `s
 to address a target. The inner payload is a pure Pi record:
 ```jsonc
 // web client → server  (forwarded to that agent's /agent socket as a command)
-{ "type":"steer", "id":"c7", "session_id":"ses_01J…", "text":"focus on the failing test" }
+// NB: Pi's `steer` carries the user text in `message` (not `text`); the UI seam maps its own
+// field onto `message` on the wire.
+{ "type":"steer", "id":"c7", "session_id":"ses_01J…", "message":"focus on the failing test" }
 // server → web client (response routed back to the originating client by id)
 { "type":"response","command":"steer","id":"c7","session_id":"ses_01J…","success":true }
 // server → web client (event fanned out to the user's clients watching that session)

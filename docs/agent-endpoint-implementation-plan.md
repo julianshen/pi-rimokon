@@ -109,8 +109,9 @@ agent, `no_available_agent` when none**; ticket single-use + expiry.
 existing `sessionView` view-model; map **`startSession(repo, prompt)` → pick an idle agent (§5.4) +
 `start_task`**, surfacing "no available agent" when none match. Observe/steer needs no shell changes;
 the new-task flow adds a small **idle-agent picker** (when >1 matches). New **`/device`** route
-(approval UI; authed Supabase → `device/approve`). **Settings → Agents** view (list/revoke
-`agent_tokens`). Auto-reconnect/backoff on the client.
+(approval UI; authed Supabase → `device/approve`; **preserves `user_code` across sign-in** since
+OAuth returns to origin). **Settings → Agents** view (list/revoke `agent_tokens`).
+Auto-reconnect/backoff on the client.
 **Acceptance (tests, keep ≥90% gate):** service unit tests against a mock `ws` (snapshot mapping incl.
 `state`, command send, reconnect, **`startSession`→`start_task` + no-available-agent**); idle-agent
 picker; `/device` approve/deny; Agents list/revoke; `VITE_PI_SERVER_URL` unset → MockPiService
