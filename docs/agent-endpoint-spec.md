@@ -335,6 +335,9 @@ hostname) is expected and correct for this design.
 
 ## 9. Phasing & known limitations
 
+> A sequenced, milestone-by-milestone build of v1 is in
+> [`agent-endpoint-implementation-plan.md`](./agent-endpoint-implementation-plan.md).
+
 - **v1 (MVP):** device flow + `/agent` auth handshake + `/client` ticket + in-memory broker
   on a **single instance**; rebind-on-reconnect (no event replay); access+refresh tokens.
 - **v2:** horizontal scale — the in-memory registry doesn't span instances, so add a shared
