@@ -96,8 +96,11 @@ cannot be a process-local map. We use **Redis Streams**, one stream per session
   `/client` snapshot and fan-out know which streams to read. Ownership is still enforced in code;
   Postgres RLS still guards any direct reads.
 
-> `seq` is assigned by the agent's instance (monotonic per session) and persisted as the Redis
-> stream ID ordering, so replay (§6) and ordering survive instance hops.
+> **`seq` vs Redis IDs.** Each entry stores the app-level `seq` (base §4.3) as a **field** in the
+> stream message; Redis assigns its own native entry ID (`ms-seq`) on `XADD`. Within one stream
+> both orderings agree (monotonic), so the relay/replay key off **Redis's native IDs**; `seq`
+> stays the client-facing ordering and the server keeps the `seq → entry-ID` correspondence for
+> resume (§6).
 
 ## 5. Revocation across instances
 
@@ -115,9 +118,10 @@ In the base spec, resume/replay was a v2 "nice to have." On Vercel it is **load-
 1. Socket approaches `maxDuration` → server sends `{"type":"reconnect_hint","in_sec":N}` (advisory)
    then closes **1000**, or the platform cuts it.
 2. Agent re-runs §4.1 auth, then sends `{"type":"resume","id":"r1","session_id":"ses_…","last_seq":42}`.
-3. The new instance reads `sess:{id}` from the entry after `seq=42` (`XRANGE (start, +`), replays
-   those events to whichever side is catching up, and resumes. The Redis stream is the source of
-   truth, so it doesn't matter that a *different* instance now holds the socket.
+3. The new instance resolves `last_seq=42` to its Redis entry ID and reads everything after it
+   (`XRANGE (lastId +`), replays those events to whichever side is catching up, and resumes. The
+   Redis stream is the source of truth, so it doesn't matter that a *different* instance now holds
+   the socket.
 4. The web client reconnects the same way (re-ticket → `/client` → resume per watched session).
 
 Streams are trimmed (`XADD … MAXLEN ~ N` or `MINID` by age) to bound history to a recent window;

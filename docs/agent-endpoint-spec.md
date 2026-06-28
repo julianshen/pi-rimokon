@@ -158,6 +158,11 @@ enforces a **handshake timeout** (~5 s): a connection that hasn't completed a va
 within the window is closed (**4408**), bounding idle/unauthenticated-socket DoS. Unknown
 `protocol` major → `success:false`, then close **4400**.
 
+> **Identifier formats (intentionally different).** The WebSocket **subprotocol token** is
+> `pi.rpc.v1` (dot-separated — `Sec-WebSocket-Protocol` must be a valid token), while
+> `hello.protocol` is the **version string** `pi.rpc/1` in `<name>/<major>` form. The major must
+> match in both; only the surface syntax differs.
+
 > **Direction note.** `hello` (and `resume`, §4.3) invert §4.2's normal flow — here the *agent*
 > sends a command-shaped frame and the *server* replies. Treat these as a **pre-routing
 > exception** handled by the connection manager *before* the session is registered with the
@@ -242,7 +247,8 @@ Plus broker-level events the agent never sees:
 ## 6. Data model (Supabase Postgres, service-role access; RLS for direct reads)
 
 - `device_codes(device_code_hash PK, user_code, client_id, status, user_id?, created_at, expires_at, last_polled_at, interval)`
-- `agent_tokens(jti PK, family_id, user_id, label, scopes, created_at, last_seen_at, revoked_at?)`
+- `agent_tokens(jti PK, family_id, user_id, label, scopes, created_at, last_seen_at, revoked_at?)` (access-token / family record)
+- `refresh_tokens(token_hash PK, family_id, jti, user_id, issued_at, expires_at, used_at?, replaced_by?, revoked_at?)` — one row per rotating refresh token; presenting a token whose row is already `used_at`/`replaced_by` is **reuse → revoke the whole `family_id`**
 - `agent_sessions(session_id PK, user_id, jti, repo, status, started_at, ended_at?, last_seq)` (history/presence)
 - RLS: a user may read only rows where `user_id = auth.uid()`. The server uses the service
   role and enforces ownership in code; RLS protects any direct client access.
@@ -261,8 +267,11 @@ Plus broker-level events the agent never sees:
 
 ## 8. Frontend integration (Vite SPA)
 
-- New env: `VITE_PI_SERVER_URL` (e.g. `wss://agents.jlnshen.com`). Without it, the app
-  keeps using `MockPiService` (the existing seam in `src/services/PiService.ts`).
+- New env: `VITE_PI_SERVER_URL` — the server origin as a `wss://` URL (e.g.
+  `wss://agents.jlnshen.com`). REST calls (`POST /client/ticket`, `/oauth/device/*`) hit the
+  **same host over `https://`**, derived by swapping the scheme (`wss`→`https`) since `fetch`
+  can't target a `wss:` URL. Without the env, the app keeps using `MockPiService` (the existing
+  seam in `src/services/PiService.ts`).
 - New `WebSocketPiService implements PiService`: gets a ticket, connects `/client`, maps the
   `sessions`/`session_online` events into `listSessions()`, sends commands addressed by
   `session_id`, and feeds incoming `event`s into the existing `sessionView` view-model.
@@ -317,7 +326,7 @@ tunnel: pi-remote
 credentials-file: /home/pi/.cloudflared/<tunnel-id>.json
 ingress:
   - hostname: agents.jlnshen.com
-    service: http://localhost:8787   # the Node WS server; cloudflared upgrades ws automatically
+    service: http://localhost:8787   # Node WS server; cloudflared forwards the HTTP Upgrade, the server completes the handshake
   - service: http_status:404
 ```
 
