@@ -257,7 +257,7 @@ Plus broker-level events the agent never sees:
 
 ## 8. Frontend integration (Vite SPA)
 
-- New env: `VITE_PI_SERVER_URL` (e.g. `wss://agents.pi-rimokon.app`). Without it, the app
+- New env: `VITE_PI_SERVER_URL` (e.g. `wss://agents.jlnshen.com`). Without it, the app
   keeps using `MockPiService` (the existing seam in `src/services/PiService.ts`).
 - New `WebSocketPiService implements PiService`: gets a ticket, connects `/client`, maps the
   `sessions`/`session_online` events into `listSessions()`, sends commands addressed by
@@ -289,19 +289,37 @@ only the static SPA (including the `/device` page).
 
 1. `cloudflared` runs next to the server and opens an **outbound** connection to Cloudflare's
    edge — **no inbound ports, no firewall holes, no public IP** needed on the host.
-2. A **named tunnel** maps a stable hostname (e.g. `agents.<your-domain>`) → `http://localhost:<port>`
-   via a DNS `CNAME` to `<tunnel-id>.cfargotunnel.com` and an ingress rule in the tunnel config.
-   (A throwaway `*.trycloudflare.com` quick tunnel works for local testing.)
+2. A **named tunnel** maps the stable hostname **`agents.jlnshen.com`** → `http://localhost:<port>`
+   via a DNS `CNAME` to `<tunnel-id>.cfargotunnel.com` and an ingress rule in the tunnel config
+   (concrete config below). (A throwaway `*.trycloudflare.com` quick tunnel works for local testing.)
 3. Cloudflare terminates TLS at its edge and **proxies the WebSocket `Upgrade`** down the tunnel
    to the local server — Cloudflare supports `wss` through both its proxy and Tunnel. The §4.3
    ping/pong heartbeat keeps connections alive past any idle timeout.
-4. Everything on the server is reached at that one hostname: `wss://agents.<domain>/agent`,
-   `wss://agents.<domain>/client`, and the HTTPS `/client/ticket`, `/oauth/device/*`,
+4. Everything on the server is reached at that one hostname: `wss://agents.jlnshen.com/agent`,
+   `wss://agents.jlnshen.com/client`, and the HTTPS `/client/ticket`, `/oauth/device/*`,
    `/.well-known/jwks.json` endpoints.
+
+**Tunnel setup (`agents.jlnshen.com`)**
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create pi-remote                        # creates <tunnel-id> + credentials json
+cloudflared tunnel route dns pi-remote agents.jlnshen.com  # adds the CNAME in Cloudflare DNS
+cloudflared tunnel run pi-remote                           # or install as a systemd service
+```
+```yaml
+# ~/.cloudflared/config.yml
+tunnel: pi-remote
+credentials-file: /home/pi/.cloudflared/<tunnel-id>.json
+ingress:
+  - hostname: agents.jlnshen.com
+    service: http://localhost:8787   # the Node WS server; cloudflared upgrades ws automatically
+  - service: http_status:404
+```
 
 **Wiring**
 
-- Set `VITE_PI_SERVER_URL=wss://agents.<your-domain>` in Vercel; the SPA opens its `/client`
+- Set `VITE_PI_SERVER_URL=wss://agents.jlnshen.com` in Vercel; the SPA opens its `/client`
   socket and fetches its ticket from that origin. The `verification_uri` stays the Vercel
   `/device` page (§3.1) — the human approves in the browser; only the *API* lives on the tunnel.
 - **Cross-origin:** the SPA origin (`https://pi-rimokon.vercel.app`) ≠ the server origin, so the
