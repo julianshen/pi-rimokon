@@ -1,19 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { ConfigError, loadConfig } from '../src/config.ts'
 
-const DB = 'postgresql://user:pass@localhost:5432/db'
+const BASE = {
+  DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+  JWT_ISSUER: 'https://agents.example.com',
+  AGENT_JWT_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----\nx\n-----END PRIVATE KEY-----',
+  AGENT_JWT_PUBLIC_KEY: '-----BEGIN PUBLIC KEY-----\nx\n-----END PUBLIC KEY-----',
+  SUPABASE_URL: 'https://ref.supabase.co',
+} as unknown as NodeJS.ProcessEnv
 
 describe('loadConfig', () => {
   it('parses a valid environment and defaults PORT to 8787', () => {
-    const config = loadConfig({ DATABASE_URL: DB } as NodeJS.ProcessEnv)
+    const config = loadConfig({ ...BASE })
     expect(config.PORT).toBe(8787)
-    expect(config.DATABASE_URL).toBe(DB)
+    expect(config.DATABASE_URL).toBe(BASE.DATABASE_URL)
+    expect(config.JWT_ISSUER).toBe(BASE.JWT_ISSUER)
     expect(config.ALLOWED_ORIGIN).toBeUndefined()
   })
 
   it('coerces a string PORT to a number and keeps ALLOWED_ORIGIN', () => {
     const config = loadConfig({
-      DATABASE_URL: DB,
+      ...BASE,
       PORT: '3000',
       ALLOWED_ORIGIN: 'https://pi-rimokon.vercel.app',
     } as NodeJS.ProcessEnv)
@@ -22,19 +29,25 @@ describe('loadConfig', () => {
   })
 
   it('throws ConfigError when DATABASE_URL is missing', () => {
-    expect(() => loadConfig({} as NodeJS.ProcessEnv)).toThrow(ConfigError)
-    expect(() => loadConfig({} as NodeJS.ProcessEnv)).toThrow(/DATABASE_URL/)
+    const { DATABASE_URL, ...rest } = BASE as Record<string, string>
+    void DATABASE_URL
+    expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(ConfigError)
+    expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(/DATABASE_URL/)
+  })
+
+  it('throws when the signing keys are missing', () => {
+    const { AGENT_JWT_PRIVATE_KEY, ...rest } = BASE as Record<string, string>
+    void AGENT_JWT_PRIVATE_KEY
+    expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(/AGENT_JWT_PRIVATE_KEY/)
   })
 
   it('throws when PORT is out of range', () => {
-    expect(() =>
-      loadConfig({ DATABASE_URL: DB, PORT: '70000' } as NodeJS.ProcessEnv),
-    ).toThrow(ConfigError)
+    expect(() => loadConfig({ ...BASE, PORT: '70000' } as NodeJS.ProcessEnv)).toThrow(ConfigError)
   })
 
   it('throws when ALLOWED_ORIGIN is not a URL', () => {
     expect(() =>
-      loadConfig({ DATABASE_URL: DB, ALLOWED_ORIGIN: 'not-a-url' } as NodeJS.ProcessEnv),
+      loadConfig({ ...BASE, ALLOWED_ORIGIN: 'not-a-url' } as NodeJS.ProcessEnv),
     ).toThrow(/ALLOWED_ORIGIN/)
   })
 })

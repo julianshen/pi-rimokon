@@ -17,6 +17,8 @@ export default defineConfig({
         'src/index.ts', // http/ws bootstrap (needs a live port)
         'src/db/client.ts', // pg Pool factory (needs a live DB)
         'src/db/runMigrate.ts', // migration CLI (needs a live DB)
+        'src/auth/supabaseJwt.ts', // wraps jose remote JWKS fetch (stubbed in tests)
+        'src/db/types.ts', // type-only
         'src/**/*.d.ts',
       ],
       thresholds: { lines: 85, functions: 85, branches: 85, statements: 85 },
