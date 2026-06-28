@@ -59,8 +59,9 @@ client emitting `hello`/events) lands in M2 and drives M2–M5 without the real 
 **Build:** `server/` project (TS, ESLint, Vitest, dotenv config with fail-fast env schema);
 `http.Server`+Express skeleton with `GET /healthz`; `shared/protocol.ts` (message-kind unions,
 close-code enum 4400/4401/4403/4408/4409/4413, framing limits); Postgres migrations for
-`device_codes`, `agent_tokens`, `agent_sessions` (spec §6) as SQL applied via a `migrate` script.
-**Acceptance:** server starts; `/healthz` 200; migrations create the three tables; `shared/protocol`
+`device_codes`, `agent_tokens`, `refresh_tokens`, `agent_sessions` (spec §6) as SQL applied via a
+`migrate` script.
+**Acceptance:** server starts; `/healthz` 200; migrations create the four tables; `shared/protocol`
 imports cleanly from both server and SPA; CI runs server tests.
 
 ### M1 — Device authorization + tokens (spec §3)
@@ -79,8 +80,9 @@ family; revoked token rejected. A curl walkthrough yields a usable JWT.
 handshake with capability + `protocol:"pi.rpc/1"` negotiation; **handshake timeout ~5s → 4408**;
 framing guard (1 JSON object/frame, **1 MiB → 4413**, binary → 4400); ping/pong **heartbeat**
 (miss → 4408); per-session monotonic `seq`; `agent_sessions` lifecycle (status `started`→`ended`);
-**revocation tear-down → 4403** (control hook from M1); resume = rebind only (no replay, per §9).
-Ships the **fake-agent harness**.
+**revocation tear-down → 4403** (control hook from M1); **availability advertisement** in `hello`
+(`mode`/`state`/`cwd` + `accept_task`, spec §4.1/§5.4); resume = rebind only (no replay, per §9).
+Ships the **fake-agent harness** (incl. an idle `accept_task` agent for §5.4 testing).
 **Acceptance (tests):** reject bad/expired token (401/4401); handshake success path; handshake
 timeout; oversized frame 4413; heartbeat-miss 4408; protocol-major mismatch 4400; mid-session
 revoke closes 4403; session row created/closed.
@@ -89,22 +91,30 @@ revoke closes 4403; session row created/closed.
 **Build:** `POST /client/ticket` (Supabase JWT → single-use, ~30s ticket); `/client` upgrade via
 ticket (validate+burn), `Origin` allow-list, **CORS** on ticket + device endpoints for the Vercel
 origin; in-memory **per-user registry** (agent sessions + web clients); **router** — web→agent
-ownership-checked forward (drop+`error` on mismatch), agent→web response-by-`id`, event **fan-out**
-(`session_id`+`seq`) to the user's watching clients; broker events `sessions` snapshot /
-`session_online` / `session_offline`; multiplexing envelope (`session_id`).
-**Acceptance (tests):** cross-user routing blocked; snapshot on connect; presence online/offline;
-fan-out to multiple clients; command forwarded to the right agent; ticket single-use + expiry.
+ownership-checked forward (drop+`error` on mismatch) **with broker-unique `id` rewrite + restore on
+the response** (spec §5.3 — so two tabs reusing a client-local `id` can't collide), event **fan-out**
+(`session_id`+`seq`) to the user's watching clients; broker events `sessions` snapshot (incl. each
+agent's idle/busy `state`) / `session_online` / `session_offline` / `agent_state`; **`start_task`
+routing to a chosen idle agent** (spec §5.4, incl. the `no_available_agent` reply); multiplexing
+envelope (`session_id`).
+**Acceptance (tests):** cross-user routing blocked; snapshot on connect (with `state`); presence
+online/offline; fan-out to multiple clients; command forwarded to the right agent; **two tabs sending
+the same client-local `id` don't collide** (broker-id rewrite); **`start_task` reaches a chosen idle
+agent, `no_available_agent` when none**; ticket single-use + expiry.
 
 ### M4 — Frontend integration (existing SPA, spec §8)
 **Build:** `WebSocketPiService implements PiService` gated on `VITE_PI_SERVER_URL` (else
 `MockPiService`): fetch ticket with the Supabase session, connect `/client`, map
 `sessions`/`session_online` → `listSessions()`, send commands by `session_id`, feed `event`s into the
-existing `sessionView` view-model — **no UI component changes** to the shell. New **`/device`** route
+existing `sessionView` view-model; map **`startSession(repo, prompt)` → pick an idle agent (§5.4) +
+`start_task`**, surfacing "no available agent" when none match. Observe/steer needs no shell changes;
+the new-task flow adds a small **idle-agent picker** (when >1 matches). New **`/device`** route
 (approval UI; authed Supabase → `device/approve`). **Settings → Agents** view (list/revoke
 `agent_tokens`). Auto-reconnect/backoff on the client.
-**Acceptance (tests, keep ≥90% gate):** service unit tests against a mock `ws` (snapshot mapping,
-command send, reconnect); `/device` approve/deny; Agents list/revoke; `VITE_PI_SERVER_URL` unset →
-MockPiService unchanged. Manual end-to-end against a locally-run server + fake agent.
+**Acceptance (tests, keep ≥90% gate):** service unit tests against a mock `ws` (snapshot mapping incl.
+`state`, command send, reconnect, **`startSession`→`start_task` + no-available-agent**); idle-agent
+picker; `/device` approve/deny; Agents list/revoke; `VITE_PI_SERVER_URL` unset → MockPiService
+unchanged. Manual end-to-end against a locally-run server + fake agent.
 
 ### M5 — Deployment & hardening (spec §8.1)
 **Build:** `cloudflared` named tunnel for `agents.jlnshen.com` (config.yml ingress → `localhost:PORT`)
@@ -112,9 +122,9 @@ MockPiService unchanged. Manual end-to-end against a locally-run server + fake a
 per-connection **rate limits**, max frame, **max sessions/clients per user**; structured logging +
 basic metrics (connections, sessions, routing errors); **graceful shutdown** (drain sockets, advise
 reconnect); agent-side reconnect/backoff. Deployment **runbook** in `docs/`.
-**Acceptance:** from a clean host, `pi login` → approve in Pi Remote → agent online → browser
-observes/steers live over `wss://agents.jlnshen.com`; restart drains cleanly and both sides
-reconnect.
+**Acceptance:** from a clean host, `pi login` → approve in Pi Remote → idle agent online → browser
+**starts a task on it** and observes/steers live over `wss://agents.jlnshen.com`; restart drains
+cleanly and both sides reconnect.
 
 ---
 

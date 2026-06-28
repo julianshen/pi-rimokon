@@ -145,7 +145,9 @@ handshake of its own):
 ```jsonc
 // agent → server (first frame)
 { "type":"hello", "id":"h1", "protocol":"pi.rpc/1",
-  "agent": { "name":"pi", "version":"0.9.3", "repo":"acme/web-app", "capabilities":["tools","diff","genui"] } }
+  "agent": { "name":"pi", "version":"0.9.3", "repo":"acme/web-app", "cwd":"/home/dev/web-app",
+             "mode":"interactive", "state":"idle",
+             "capabilities":["tools","diff","genui","accept_task"] } }
 // server → agent
 { "type":"response","command":"hello","id":"h1","success":true,
   "data": { "session_id":"ses_01J…", "user_id":"<supabase sub>", "server":"pi-remote/1.0.0", "heartbeat_sec":30 } }
@@ -226,8 +228,9 @@ to address a target. The inner payload is a pure Pi record:
 { "type":"tool_execution_update","session_id":"ses_01J…","seq":43, …fields }
 ```
 Plus broker-level events the agent never sees:
-- `{"type":"sessions","sessions":[{ "session_id":"<id>","repo":"<name>","status":"<status>","agent":{…},"last_seq":0 }]}` (snapshot on connect)
+- `{"type":"sessions","sessions":[{ "session_id":"<id>","repo":"<name>","status":"<status>","state":"<idle|busy>","agent":{…},"last_seq":0 }]}` (snapshot on connect)
 - `{"type":"session_online","session_id":"<id>",…}` / `{"type":"session_offline","session_id":"<id>","reason":"<str>"}`
+- `{"type":"agent_state","session_id":"<id>","state":"<idle|busy>"}` (availability changed — drives which agents can accept a new task, §5.4)
 
 ### 5.3 Routing rules (broker)
 
@@ -243,6 +246,29 @@ Plus broker-level events the agent never sees:
   `session_id` + `seq`) to all of the user's web clients watching the session.
 - Cross-user routing is impossible by construction — that is exactly how "whose session"
   is enforced.
+
+### 5.4 Starting a task on an idle agent (browser-initiated)
+
+Agents connect **inbound** (device flow → `/agent`), so the browser never spawns a process — but it
+can hand a new task to an agent already connected and **idle**. An agent that accepts browser-started
+work connects with `mode:"interactive"`, an initial `state:"idle"`, its `cwd`/`repo`, and the
+`accept_task` capability (§4.1); the broker surfaces availability via the `sessions` snapshot
+(`state`) and `agent_state` events (§5.2).
+
+This maps the existing `PiService.startSession(repo, prompt)` seam:
+1. The web client picks a target **`idle`** agent session, optionally matched by `repo` (if more than
+   one matches, the UI lets the user choose).
+2. It sends a **`start_task`** command:
+   `{ "type":"start_task", "id":"c9", "session_id":"ses_…", "prompt":"<initial instruction>", "options":{…}? }`.
+3. The broker forwards it (ownership-checked, id-rewritten per §5.3) to the agent. The agent flips to
+   `busy` (emitting `agent_state`), responds
+   `{"type":"response","command":"start_task","id":"c9","success":true}`, and streams `event`s for
+   the active task; on completion it returns to `idle`.
+4. If **no** idle agent matches, the broker replies `success:false`, `error:"no_available_agent"`,
+   and the SPA surfaces "run `pi` in <repo> to start an agent" — the browser cannot start one itself.
+
+So `startSession` resolves to *selecting* an already-connected idle agent and starting its task,
+never to provisioning compute; a single-session agent that is already `busy` simply isn't offered.
 
 ## 6. Data model (Supabase Postgres, service-role access; RLS for direct reads)
 
@@ -273,9 +299,11 @@ Plus broker-level events the agent never sees:
   can't target a `wss:` URL. Without the env, the app keeps using `MockPiService` (the existing
   seam in `src/services/PiService.ts`).
 - New `WebSocketPiService implements PiService`: gets a ticket, connects `/client`, maps the
-  `sessions`/`session_online` events into `listSessions()`, sends commands addressed by
-  `session_id`, and feeds incoming `event`s into the existing `sessionView` view-model.
-  No UI components change — the seam absorbs it.
+  `sessions`/`session_online`/`agent_state` events into `listSessions()` (carrying each agent's
+  idle/busy `state`), sends commands addressed by `session_id`, feeds incoming `event`s into the
+  existing `sessionView` view-model, and maps **`startSession(repo, prompt)` → pick an idle agent
+  (§5.4) + `start_task`** (surfacing "no available agent" when none match). Observe/steer needs no
+  UI change; the new-task flow adds a small **idle-agent picker** when more than one matches.
 - New `/device` route (device approval) and a **Settings → Agents** view (list/revoke
   `agent_tokens`).
 
