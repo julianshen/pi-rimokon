@@ -26,7 +26,7 @@ That win comes with two Vercel-specific constraints that **drive the whole desig
 |---|---|
 | A socket is **pinned to its Function instance** for the connection's life; two clients can land on **different instances** and never see each other. | In-process routing only reaches *co-located* sockets. We **must** put an **external relay (Redis Streams)** between agent and browser. There is **no single-instance in-memory phase** (the base spec's v1). |
 | A connection lives at most as long as the Function's **max duration**: **800 s default, up to 1800 s (30 min)** for Pro/Enterprise, configured per-function during the beta. | Sockets are **ephemeral by design**. **Reconnect + resume + event replay is a v1 requirement**, not a v2 nicety (base spec §4.3 / §9). The durable event log lives in Redis. |
-| Billing is **active-CPU only** — idle connection time is **not** billed. | Mostly-idle agent sessions are cheap; heartbeats should stay lightweight (each ping is billable processing). |
+| Billing has **two parts**: **Active CPU** (only while processing — idle messaging is ~free) **and Provisioned Memory**, which is billed for the **entire time the socket holds the instance open**, idle or not ([pricing](https://vercel.com/docs/functions/usage-and-pricing)). | Mostly-idle sessions avoid CPU cost but still accrue **memory GB-hrs** for the connection's life (amortized across sockets packed on one instance via Fluid concurrency) plus data transfer. So: keep heartbeats light, pack connections, and bound `maxDuration`. |
 
 ## 2. Architecture
 
@@ -160,19 +160,19 @@ a separate `agents.*` host — which also sidesteps cross-origin concerns on the
 | **Connection lifetime** | Unbounded (you control the process) | **Capped at ≤30 min**; forced reconnects |
 | **Cross-instance routing** | Optional — single instance works for v1 (in-memory) | **Mandatory external bus (Redis) from v1** |
 | **Resume/replay** | Can defer to v2 | **Required in v1** (duration cap guarantees cuts) |
-| **Cost model** | Always-on instance (pay for idle) | **Active-CPU only** (idle sockets ~free) |
+| **Cost model** | Always-on instance (pay for idle) | Active-CPU only when processing, **but provisioned memory billed for the whole connection lifetime** — not "free when idle" |
 | **Scaling** | You manage it (or a PaaS) | Automatic (Fluid) |
 | **Cold starts** | None (warm process) | Possible on the function path |
 | **Same-origin `wss`** | No — separate host + CORS/Origin setup | Yes — `wss://<same-app>/client` |
 | **Best when** | Long-lived, chatty, latency-sensitive sessions; full control | Lower ops, spiky/idle agents, staying all-in on Vercel |
 
-**Recommendation to discuss:** Vercel WS is attractive for **operational simplicity and cost** if
-we're comfortable making **reconnect-with-replay a first-class, always-exercised path** and taking
-a **Redis dependency** on day one. The standalone server is the safer pick if we expect **long,
-continuous, low-latency** agent sessions where a 30-min hard cut and cold starts would hurt. A
-pragmatic middle path: **adopt this Vercel design for v1** (cheapest to ship, no new service) and
-keep the standalone server as the escape hatch if duration caps or latency become a problem —
-because §3's auth and the Pi RPC envelope are identical, **only the transport host would change.**
+**Status:** superseded by the decision to ship the **standalone server** for v1 (see the
+[base spec](./agent-endpoint-spec.md) and [implementation plan](./agent-endpoint-implementation-plan.md));
+this document is retained as the **escape hatch**. Vercel WS still wins on **operational
+simplicity**, but its cost edge is narrower than "idle is free" implies (provisioned memory is
+billed for the whole connection, §1), and the **30-min cap forces reconnect-with-replay + a Redis
+dependency from day one**. Because §3's auth and the Pi RPC envelope are identical, revisiting this
+later **changes only the transport host.**
 
 ## 11. Open questions
 

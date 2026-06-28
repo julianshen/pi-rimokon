@@ -84,9 +84,9 @@ runs* and the consequences that follow. Tables are grouped by concern.
 
 | Aspect | A · Standalone | B · Vercel |
 |---|---|---|
-| Billing model | Always-on instance(s) — **pay for idle** | **Active-CPU only** — idle sockets ≈ free |
-| Idle agents | Still cost (process is up) | Cheap |
-| Busy/chatty agents | Flat (already paid for) | Pay per processing burst + Redis ops |
+| Billing model | Always-on instance(s) — **pay for idle** | **Active CPU** only while processing, **+ Provisioned Memory billed for the whole connection lifetime** (the socket pins the instance) |
+| Idle agents | Still cost (process is up) | No CPU charge, but **memory accrues while connected** (amortized across sockets packed on one instance) + data transfer |
+| Busy/chatty agents | Flat (already paid for) | Active-CPU per burst + memory + Redis ops |
 | Added cost | Hosting bill | Redis plan |
 
 ## 8. Latency & performance
@@ -106,14 +106,16 @@ runs* and the consequences that follow. Tables are grouped by concern.
 | A 30-min hard cut is unacceptable | Reconnect-with-replay is fine as the steady state |
 | You want lowest hop latency / full control | You want zero new ops surface |
 | You'd rather not add Redis at v1 | You're happy taking a Redis dependency |
-| Idle cost is acceptable for predictability | You want idle to be ~free |
+| You prefer flat, predictable cost | You want no per-message idle CPU cost (memory still accrues while connected) |
 
-## 10. Recommendation
+## 10. Decision
 
-Because **auth and the Pi RPC envelope are identical**, the transport is the *only* thing that
-changes between A and B — so this is a reversible decision. The pragmatic path: **ship B (Vercel)
-for v1** to avoid standing up and operating a new service, *provided* we accept (1) making
-**reconnect-with-replay a first-class, always-exercised path** and (2) a **Redis dependency** from
-day one, and we're on a **Pro/Enterprise** plan for the 30-min duration. Keep **A** as the
-escape hatch if the duration cap, cold starts, or the extra Redis hop ever hurt — switching back
-touches only the transport layer, not identity or protocol.
+**Decided: A — the standalone Node server is the chosen transport for v1**, self-hosted behind the
+`agents.jlnshen.com` Cloudflare Tunnel (see the [base spec](./agent-endpoint-spec.md) and the
+[implementation plan](./agent-endpoint-implementation-plan.md)). The earlier analysis leaned toward
+B for operational simplicity, but two things settled it on A: the **30-min connection cap forces
+reconnect-with-replay and a Redis dependency from day one**, and B's cost edge is **smaller than
+"idle is free" suggests** — Fluid bills *provisioned memory* for a connection's entire open
+lifetime, not just active CPU (§7). Because **auth and the Pi RPC envelope are identical**, the
+choice stays reversible: **B remains the documented escape hatch** if self-hosting ops or the
+duration model ever become the bottleneck — switching back touches only the transport host.

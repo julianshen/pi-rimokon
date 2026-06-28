@@ -229,9 +229,13 @@ Plus broker-level events the agent never sees:
 - The server keeps, per `user_id`, a registry of connected **agent sessions** and **web
   clients**.
 - **Web → agent:** verify the target `session_id` belongs to the **same `user_id`** (else
-  drop + `error`), strip `session_id`, forward the inner command to that agent.
-- **Agent → web:** map a `response.id` back to the web client that issued it; **fan out**
-  `event`s (with `session_id` + `seq`) to all of the user's web clients watching the session.
+  drop + `error`), strip `session_id`, **rewrite the command `id` to a broker-unique value** and
+  record `broker_id → (web client, original id)`, then forward the inner command to that agent.
+  (A client-supplied `id` is only unique within one tab, so two `/client` sockets watching the
+  same agent could otherwise reuse the same `id` and collide on correlation.)
+- **Agent → web:** correlate the `response` by its broker-unique `id` back to the **exact** web
+  client that issued it, **restore the original `id`**, and deliver; **fan out** `event`s (with
+  `session_id` + `seq`) to all of the user's web clients watching the session.
 - Cross-user routing is impossible by construction — that is exactly how "whose session"
   is enforced.
 
