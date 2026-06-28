@@ -76,7 +76,7 @@ runs* and the consequences that follow. Tables are grouped by concern.
 | Aspect | A · Standalone | B · Vercel |
 |---|---|---|
 | Identity | Supabase Auth (GitHub) | same |
-| System of record | Supabase Postgres: `device_codes`, `agent_tokens`, `agent_sessions` | same |
+| System of record | Supabase Postgres: `device_codes`, `agent_tokens`, `refresh_tokens`, `agent_sessions` | same |
 | Extra infra | None at v1 (bus only at v2 for scale) | **Redis (e.g. Upstash) from v1**: streams, presence, tickets, control |
 | New failure domain | The service itself | Redis availability + per-instance limits |
 

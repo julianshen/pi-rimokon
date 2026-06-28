@@ -80,11 +80,14 @@ Because the agent socket and the browser socket may be on different instances, t
 cannot be a process-local map. We use **Redis Streams**, one stream per session
 (`sess:{session_id}`), as both the relay and the replay log:
 
-- **Agent → web (events/responses):** the agent's instance `XADD`s each frame (already carrying
-  `seq`, base §4.3) to `sess:{id}`. Every instance holding a `/client` socket *watching* that
-  session keeps a blocking reader (`XREAD BLOCK` on a duplicated Redis connection) and **fans the
-  entry out to its local sockets**. This is exactly the "stream does double duty as relay +
-  history" pattern Vercel/Rivet describe for Fluid WebSockets.
+- **Agent → web — events:** the agent's instance stamps `seq` (base §4.3) and `XADD`s each
+  **event** to `sess:{id}`. Every instance holding a `/client` socket *watching* that session keeps
+  a blocking reader (`XREAD BLOCK` on a duplicated Redis connection) and **fans events out to its
+  local sockets** — the "stream does double duty as relay + history" pattern Vercel/Rivet describe.
+- **Agent → web — responses:** a `response` is **not** broadcast. It carries the broker-unique
+  command `id` (base §5.3); the relay delivers it only to the instance/socket that issued the
+  command (e.g. a per-command reply key `resp:{broker_id}` the issuing instance waits on), which
+  restores the original `id` first. Two tabs watching one agent never see each other's responses.
 - **Web → agent (commands):** the `/client` instance validates ownership (same `user_id`), strips
   `session_id`, and `XADD`s the inner command to a per-session **command** stream
   (`sess:{id}:cmd`); the agent's instance reads it and writes it to the agent socket.
