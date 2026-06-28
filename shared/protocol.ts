@@ -74,7 +74,12 @@ export interface ResponseFrame {
   error?: string
 }
 
-/** An unsolicited event frame (agent → server); carries a monotonic `seq`. */
+/**
+ * An event frame. Agent-emitted events carry a monotonic `seq` (spec §4.3);
+ * broker-level events (`sessions`, `session_online`/`offline`, §5.2) do not, so
+ * `seq` is optional on this shared shape. M3 narrows these into a discriminated
+ * union once the broker vocabulary is fixed.
+ */
 export interface EventFrame {
   type: string
   seq?: number
@@ -86,6 +91,8 @@ export type PiFrame = CommandFrame | ResponseFrame | EventFrame
 
 /**
  * `/client` multiplexing envelope (spec §5.2): a web client addresses a target
- * agent by `session_id`; the inner payload is a pure Pi frame.
+ * agent by `session_id`. It is optional here because broker-level control
+ * frames (e.g. the `sessions` snapshot) are not session-addressed; M3 tightens
+ * this once agent-addressed vs broker-level frames are split into a union.
  */
 export type ClientEnvelope = PiFrame & { session_id?: string }

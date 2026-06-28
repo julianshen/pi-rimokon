@@ -17,7 +17,7 @@ describe('shared protocol contract', () => {
   })
 
   it('pins the spec §4.4 close codes', () => {
-    expect(CLOSE_CODES).toMatchObject({
+    expect(CLOSE_CODES).toEqual({
       NORMAL: 1000,
       PROTOCOL_ERROR: 4400,
       UNAUTHORIZED: 4401,

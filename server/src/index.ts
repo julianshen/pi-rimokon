@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { createServer } from 'node:http'
 import { createApp } from './app.ts'
 import { loadConfig } from './config.ts'

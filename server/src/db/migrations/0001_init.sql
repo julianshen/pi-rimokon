@@ -14,9 +14,10 @@ CREATE TABLE IF NOT EXISTS device_codes (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at       TIMESTAMPTZ NOT NULL,
   last_polled_at   TIMESTAMPTZ,
-  interval         INTEGER NOT NULL DEFAULT 5
+  -- spec §6 calls this `interval`; renamed to avoid the reserved INTERVAL type.
+  poll_interval    INTEGER NOT NULL DEFAULT 5
 );
-CREATE INDEX IF NOT EXISTS device_codes_user_code_idx ON device_codes (user_code);
+-- (no extra index on user_code: the UNIQUE constraint already creates one.)
 
 -- Issued agent access tokens / token families (spec §3.2).
 CREATE TABLE IF NOT EXISTS agent_tokens (
@@ -37,12 +38,12 @@ CREATE INDEX IF NOT EXISTS agent_tokens_family_id_idx ON agent_tokens (family_id
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   token_hash  TEXT PRIMARY KEY,
   family_id   TEXT NOT NULL,
-  jti         TEXT NOT NULL,
+  jti         TEXT NOT NULL REFERENCES agent_tokens (jti) ON DELETE CASCADE,
   user_id     UUID NOT NULL,
   issued_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at  TIMESTAMPTZ NOT NULL,
   used_at     TIMESTAMPTZ,
-  replaced_by TEXT,
+  replaced_by TEXT REFERENCES refresh_tokens (token_hash) ON DELETE SET NULL,
   revoked_at  TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS refresh_tokens_family_id_idx ON refresh_tokens (family_id);

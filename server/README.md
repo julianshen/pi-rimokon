@@ -37,8 +37,9 @@ server/
 cd server
 npm install
 cp .env.example .env     # fill in DATABASE_URL
-npm run dev              # tsx watch on :PORT (default 8787)
-npm test                 # vitest (≥85% coverage gate on core logic)
+npm run dev              # tsx watch on :PORT (default 8787); loads .env via dotenv
+npm test                 # vitest run
+npm run coverage         # vitest + ≥85% coverage gate on core logic
 npm run typecheck        # tsc --noEmit
 npm run migrate          # apply migrations to DATABASE_URL
 ```

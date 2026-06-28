@@ -23,8 +23,13 @@ export async function loadMigrations(dir: string = MIGRATIONS_DIR): Promise<Migr
 
 /**
  * Apply all migrations in order via `exec`, returning the names applied.
- * The executor is injected so the same logic drives a real Postgres pool
- * (runMigrate.ts) and an in-process pglite instance (tests).
+ * Each file runs inside its own transaction so a multi-statement migration is
+ * applied all-or-nothing. The executor is injected and MUST run every call on a
+ * single connection (so BEGIN/COMMIT pair up) — drives both a checked-out
+ * Postgres client (runMigrate.ts) and an in-process pglite instance (tests).
+ *
+ * Re-running is safe: the DDL is idempotent (`IF NOT EXISTS`). A persisted
+ * applied-migrations ledger is a deliberate follow-up, not needed for v1.
  */
 export async function applyMigrations(
   exec: SqlExecutor,
@@ -32,7 +37,14 @@ export async function applyMigrations(
 ): Promise<string[]> {
   const migrations = await loadMigrations(dir)
   for (const migration of migrations) {
-    await exec(migration.sql)
+    await exec('BEGIN')
+    try {
+      await exec(migration.sql)
+      await exec('COMMIT')
+    } catch (err) {
+      await exec('ROLLBACK')
+      throw err
+    }
   }
   return migrations.map((m) => m.name)
 }

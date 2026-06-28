@@ -41,4 +41,20 @@ describe('migrations', () => {
       await db.close()
     }
   })
+
+  it('wraps each migration in a transaction and rolls back on failure', async () => {
+    const calls: string[] = []
+    const exec = (sql: string) => {
+      calls.push(sql)
+      // Fail on the migration body (anything that is not a txn control word).
+      if (sql !== 'BEGIN' && sql !== 'COMMIT' && sql !== 'ROLLBACK') {
+        return Promise.reject(new Error('boom'))
+      }
+      return Promise.resolve()
+    }
+    await expect(applyMigrations(exec)).rejects.toThrow('boom')
+    expect(calls[0]).toBe('BEGIN')
+    expect(calls.at(-1)).toBe('ROLLBACK')
+    expect(calls).not.toContain('COMMIT')
+  })
 })
