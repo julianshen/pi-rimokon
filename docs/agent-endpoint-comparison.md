@@ -56,7 +56,7 @@ runs* and the consequences that follow. Tables are grouped by concern.
 |---|---|---|
 | Resume/replay priority | **v2** (nice-to-have; v1 just rebinds) | **v1 requirement** (duration cap guarantees cuts) |
 | Event history store | Deferred to v2 (in-memory ring → bus) | **Redis stream `sess:{id}`** doubles as durable log |
-| `seq` ordering | Per-session monotonic (agent-assigned) | Same; persisted as Redis stream-ID order |
+| `seq` ordering | **Server/broker-stamped** per session (stock Pi events carry no seq) | Same; stored as a stream field, Redis assigns native IDs |
 | High-water mark | `agent_sessions.last_seq` (Postgres) | Same |
 | Replay window | Bounded ring (v2) | Stream trimmed by `MAXLEN`/`MINID`; older → full resync |
 

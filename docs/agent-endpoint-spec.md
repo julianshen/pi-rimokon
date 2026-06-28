@@ -266,11 +266,12 @@ work connects with `mode:"interactive"`, an initial `state:"idle"`, its `cwd`/`r
 This maps the existing `PiService.startSession(repo, prompt)` seam:
 1. The web client picks a target **`idle`** agent session, optionally matched by `repo` (if more than
    one matches, the UI lets the user choose).
-2. It sends a **`start_task`** command:
-   `{ "type":"start_task", "id":"c9", "session_id":"ses_…", "prompt":"<initial instruction>", "options":{…}? }`.
+2. It sends Pi's standard **`prompt`** command (there is no custom "start" verb — the inner record is
+   a pure Pi record, §5.2), addressed by `session_id`:
+   `{ "type":"prompt", "id":"c9", "session_id":"ses_…", "message":"<initial instruction>", "images":[…]? }`.
 3. The broker forwards it (ownership-checked, id-rewritten per §5.3) to the agent. The agent flips to
    `busy` (emitting `agent_state`), responds
-   `{"type":"response","command":"start_task","id":"c9","success":true}`, and streams `event`s for
+   `{"type":"response","command":"prompt","id":"c9","success":true}`, and streams `event`s for
    the active task; on completion it returns to `idle`.
 4. If **no** idle agent matches, the broker replies `success:false`, `error:"no_available_agent"`,
    and the SPA surfaces "run `pi` in <repo> to start an agent" — the browser cannot start one itself.
@@ -310,7 +311,7 @@ never to provisioning compute; a single-session agent that is already `busy` sim
   `sessions`/`session_online`/`agent_state` events into `listSessions()` (carrying each agent's
   idle/busy `state`), sends commands addressed by `session_id`, feeds incoming `event`s into the
   existing `sessionView` view-model, and maps **`startSession(repo, prompt)` → pick an idle agent
-  (§5.4) + `start_task`** (surfacing "no available agent" when none match). Observe/steer needs no
+  (§5.4) + Pi `prompt`** (surfacing "no available agent" when none match). Observe/steer needs no
   UI change; the new-task flow adds a small **idle-agent picker** when more than one matches.
 - New `/device` route (device approval) and a **Settings → Agents** view (list/revoke
   `agent_tokens`).

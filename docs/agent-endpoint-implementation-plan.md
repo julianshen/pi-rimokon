@@ -89,17 +89,17 @@ revoke closes 4403; session row created/closed.
 
 ### M3 — Web client `/client` + broker (spec §5)
 **Build:** `POST /client/ticket` (Supabase JWT → single-use, ~30s ticket); `/client` upgrade via
-ticket (validate+burn), `Origin` allow-list, **CORS** on ticket + device endpoints for the Vercel
-origin; in-memory **per-user registry** (agent sessions + web clients); **router** — web→agent
+ticket (validate+burn), `Origin` allow-list, **CORS** on every browser-called API (ticket, device,
+`/oauth/revoke`, Settings→Agents list/revoke) for the Vercel origin; in-memory **per-user registry** (agent sessions + web clients); **router** — web→agent
 ownership-checked forward (drop+`error` on mismatch) **with broker-unique `id` rewrite + restore on
 the response** (spec §5.3 — so two tabs reusing a client-local `id` can't collide), event **fan-out**
 (`session_id`+`seq`) to the user's watching clients; broker events `sessions` snapshot (incl. each
-agent's idle/busy `state`) / `session_online` / `session_offline` / `agent_state`; **`start_task`
+agent's idle/busy `state`) / `session_online` / `session_offline` / `agent_state`; **Pi `prompt`
 routing to a chosen idle agent** (spec §5.4, incl. the `no_available_agent` reply); multiplexing
 envelope (`session_id`).
 **Acceptance (tests):** cross-user routing blocked; snapshot on connect (with `state`); presence
 online/offline; fan-out to multiple clients; command forwarded to the right agent; **two tabs sending
-the same client-local `id` don't collide** (broker-id rewrite); **`start_task` reaches a chosen idle
+the same client-local `id` don't collide** (broker-id rewrite); **a `prompt` reaches a chosen idle
 agent, `no_available_agent` when none**; ticket single-use + expiry.
 
 ### M4 — Frontend integration (existing SPA, spec §8)
@@ -107,13 +107,13 @@ agent, `no_available_agent` when none**; ticket single-use + expiry.
 `MockPiService`): fetch ticket with the Supabase session, connect `/client`, map
 `sessions`/`session_online` → `listSessions()`, send commands by `session_id`, feed `event`s into the
 existing `sessionView` view-model; map **`startSession(repo, prompt)` → pick an idle agent (§5.4) +
-`start_task`**, surfacing "no available agent" when none match. Observe/steer needs no shell changes;
+Pi `prompt`**, surfacing "no available agent" when none match. Observe/steer needs no shell changes;
 the new-task flow adds a small **idle-agent picker** (when >1 matches). New **`/device`** route
 (approval UI; authed Supabase → `device/approve`; **preserves `user_code` across sign-in** since
 OAuth returns to origin). **Settings → Agents** view (list/revoke `agent_tokens`).
 Auto-reconnect/backoff on the client.
 **Acceptance (tests, keep ≥90% gate):** service unit tests against a mock `ws` (snapshot mapping incl.
-`state`, command send, reconnect, **`startSession`→`start_task` + no-available-agent**); idle-agent
+`state`, command send, reconnect, **`startSession`→`prompt` + no-available-agent**); idle-agent
 picker; `/device` approve/deny; Agents list/revoke; `VITE_PI_SERVER_URL` unset → MockPiService
 unchanged. Manual end-to-end against a locally-run server + fake agent.
 
