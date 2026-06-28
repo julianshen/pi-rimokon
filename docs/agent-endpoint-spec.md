@@ -10,15 +10,16 @@ the session belongs to**, and exchanges messages using **Pi's RPC envelope**
 the socket. It also covers the **broker** that lets a user's Pi Remote browser session
 observe and drive its own agents.
 
-Decisions locked for this spec: standalone **Node WebSocket server**; **custom RFC 8628**
-device flow issuing **app-scoped, revocable agent tokens** bound to the Supabase user;
-scope = **agent endpoint + broker + web client**.
+Decisions locked for this spec: standalone **Node WebSocket server** (the chosen transport —
+typically **self-hosted behind a Cloudflare Tunnel**, see §8.1); **custom RFC 8628** device flow
+issuing **app-scoped, revocable agent tokens** bound to the Supabase user; scope =
+**agent endpoint + broker + web client**.
 
-> **Alternative transport:** since Vercel now serves WebSockets on Fluid compute, there is a
-> sibling design that hosts `/agent` on Vercel itself (no standalone service) —
-> [`agent-endpoint-spec-vercel.md`](./agent-endpoint-spec-vercel.md). Auth, the Pi RPC envelope,
-> framing, and broker ownership rules are shared; only the transport host differs. See the
-> [side-by-side comparison](./agent-endpoint-comparison.md) for the full trade-off breakdown.
+> **Decision:** this standalone design is the chosen transport. A sibling design that hosts
+> `/agent` on Vercel's Fluid-compute WebSockets ([`agent-endpoint-spec-vercel.md`](./agent-endpoint-spec-vercel.md))
+> is **retained as an escape hatch** — auth, the Pi RPC envelope, framing, and broker ownership
+> are shared, so only the transport host would change. See the
+> [side-by-side comparison](./agent-endpoint-comparison.md) for the trade-offs.
 
 ---
 
@@ -264,6 +265,55 @@ Plus broker-level events the agent never sees:
   No UI components change — the seam absorbs it.
 - New `/device` route (device approval) and a **Settings → Agents** view (list/revoke
   `agent_tokens`).
+
+### 8.1 Deployment topology — Vercel SPA + self-hosted server behind a Cloudflare Tunnel
+
+The intended deployment self-hosts the server (e.g. on the Pi itself) and exposes it through a
+**Cloudflare Tunnel**. The key fact: **Vercel is not in the WebSocket path and does not route to
+the server** — the browser and agents connect **directly** to the tunnel hostname. Vercel serves
+only the static SPA (including the `/device` page).
+
+```
+                     ┌─ static SPA + /device page ─► Vercel (pi-rimokon.vercel.app)
+ Browser ────────────┤
+   │  wss /client  +  https /client/ticket ─┐
+   │                                        ▼
+   │                          Cloudflare edge (TLS, WS upgrade) ──┐
+ Agent ─ wss /agent ─────────────────────────────────────────────┤  Cloudflare Tunnel
+                                                                  ▼  (cloudflared, outbound)
+                                                   self-hosted Node server  ─►  Supabase
+                                                   http://localhost:<port>      (Auth + Postgres)
+```
+
+**How it works**
+
+1. `cloudflared` runs next to the server and opens an **outbound** connection to Cloudflare's
+   edge — **no inbound ports, no firewall holes, no public IP** needed on the host.
+2. A **named tunnel** maps a stable hostname (e.g. `agents.<your-domain>`) → `http://localhost:<port>`
+   via a DNS `CNAME` to `<tunnel-id>.cfargotunnel.com` and an ingress rule in the tunnel config.
+   (A throwaway `*.trycloudflare.com` quick tunnel works for local testing.)
+3. Cloudflare terminates TLS at its edge and **proxies the WebSocket `Upgrade`** down the tunnel
+   to the local server — Cloudflare supports `wss` through both its proxy and Tunnel. The §4.3
+   ping/pong heartbeat keeps connections alive past any idle timeout.
+4. Everything on the server is reached at that one hostname: `wss://agents.<domain>/agent`,
+   `wss://agents.<domain>/client`, and the HTTPS `/client/ticket`, `/oauth/device/*`,
+   `/.well-known/jwks.json` endpoints.
+
+**Wiring**
+
+- Set `VITE_PI_SERVER_URL=wss://agents.<your-domain>` in Vercel; the SPA opens its `/client`
+  socket and fetches its ticket from that origin. The `verification_uri` stays the Vercel
+  `/device` page (§3.1) — the human approves in the browser; only the *API* lives on the tunnel.
+- **Cross-origin:** the SPA origin (`https://pi-rimokon.vercel.app`) ≠ the server origin, so the
+  server must (a) **allow that `Origin`** on `/client` (§7) and (b) send **CORS** headers
+  (`Access-Control-Allow-Origin` for the Vercel origin, `Authorization` allowed) on the
+  `/client/ticket` and device endpoints. WS frames aren't CORS-gated, but the ticket fetch is.
+
+**Why not proxy through Vercel.** Vercel `rewrites` forward plain HTTP but do **not** carry the
+WebSocket `Upgrade` to an external origin, and Vercel's native WS support terminates sockets on
+its own Fluid compute rather than reverse-proxying to your backend. So there is no supported way
+to make `wss://pi-rimokon.vercel.app/agent` reach the tunnel — a second origin (the tunnel
+hostname) is expected and correct for this design.
 
 ## 9. Phasing & known limitations
 
