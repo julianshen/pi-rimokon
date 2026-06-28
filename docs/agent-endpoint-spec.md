@@ -373,10 +373,11 @@ ingress:
   socket and fetches its ticket from that origin. The `verification_uri` stays the Vercel
   `/device` page (§3.1) — the human approves in the browser; only the *API* lives on the tunnel.
 - **Cross-origin:** the SPA origin (`https://pi-rimokon.vercel.app`) ≠ the server origin, so the
-  server must (a) **allow that `Origin`** on `/client` (§7) and (b) send **CORS** headers
-  (`Access-Control-Allow-Origin` for the Vercel origin, `Authorization` allowed) on **every
+  server must (a) **allow that `Origin`** on `/client` (§7) and (b) send **CORS** headers on **every
   browser-called HTTPS API** — `/client/ticket`, `/oauth/device/*`, `/oauth/revoke`, and the
-  Settings → Agents list/revoke endpoints. WS frames aren't CORS-gated, but those fetches are.
+  Settings → Agents list/revoke endpoints — allowing the Vercel origin, the request methods used
+  (`POST`/`DELETE`), and the **`Authorization` + `Content-Type`** headers (the JSON `device/approve`
+  and Agents calls preflight both). WS frames aren't CORS-gated, but those fetches are.
 
 **Why not proxy through Vercel.** Vercel `rewrites` forward plain HTTP but do **not** carry the
 WebSocket `Upgrade` to an external origin, and Vercel's native WS support terminates sockets on
