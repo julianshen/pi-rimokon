@@ -21,9 +21,17 @@ export class TicketStore {
 
   /** Issue a ticket bound to a user; returned to the SPA over HTTPS. */
   issue(userId: string): { ticket: string; expiresIn: number } {
+    this.sweepExpired() // evict never-redeemed tickets so the map can't grow unbounded
     const ticket = randomToken()
     this.tickets.set(ticket, { userId, expiresAt: this.now() + this.ttlSec })
     return { ticket, expiresIn: this.ttlSec }
+  }
+
+  private sweepExpired(): void {
+    const now = this.now()
+    for (const [ticket, entry] of this.tickets) {
+      if (now > entry.expiresAt) this.tickets.delete(ticket)
+    }
   }
 
   /** Redeem (and burn) a ticket. Returns the bound user id, or undefined if

@@ -61,4 +61,13 @@ describe('TicketStore', () => {
     const store = new TicketStore(() => 0, 30)
     expect(store.redeem('nope')).toBeUndefined()
   })
+
+  it('sweeps expired tickets when a new one is issued', () => {
+    let t = 0
+    const store = new TicketStore(() => t, 30)
+    const { ticket: stale } = store.issue('u1')
+    t = 31 // stale is now expired
+    store.issue('u2') // triggers the sweep, evicting `stale`
+    expect(store.redeem(stale)).toBeUndefined()
+  })
 })

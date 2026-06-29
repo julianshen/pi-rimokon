@@ -73,8 +73,13 @@ export function attachWebSockets(
     }
 
     if (url.pathname === '/client') {
-      // Browser origin allow-list (spec §7).
-      if (ctx.allowedOrigin && req.headers.origin && req.headers.origin !== ctx.allowedOrigin) {
+      // Browser origin allow-list (spec §7); '*' disables the check. A missing
+      // Origin is rejected too, so a non-browser client can't bypass the gate.
+      if (
+        ctx.allowedOrigin &&
+        ctx.allowedOrigin !== '*' &&
+        req.headers.origin !== ctx.allowedOrigin
+      ) {
         socket.destroy()
         return
       }

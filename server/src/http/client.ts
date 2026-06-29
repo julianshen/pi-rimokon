@@ -38,6 +38,8 @@ export function clientRouter(ctx: AuthContext, tickets: TicketStore): Router {
       }
       const { sub } = await ctx.verifySupabaseToken(token)
       const { ticket, expiresIn } = tickets.issue(sub)
+      // The ticket is a redeemable secret — never let it be cached.
+      res.set('Cache-Control', 'no-store')
       res.status(200).json({ ticket, expires_in: expiresIn })
     }),
   )

@@ -199,7 +199,7 @@ describe('/agent session lifecycle', () => {
   })
 
   it('closes with 4403 when the family is revoked mid-handshake (re-check)', async () => {
-    const { token, jti } = await issueAgentAccess(h)
+    const { token } = await issueAgentAccess(h)
     // isActive: active on the pre-register check, revoked on the post-register
     // re-check — simulating a revoke that lands during the handshake await.
     let activeChecks = 0
@@ -219,7 +219,7 @@ describe('/agent session lifecycle', () => {
     await flush()
     expect(activeChecks).toBe(2)
     expect(socket.lastClose).toBe(CLOSE_CODES.FORBIDDEN)
-    expect(hub.getAgent(jti)).toBeUndefined()
+    expect(hub.listAgentsByUser(TEST_USER)).toHaveLength(0) // not left registered
   })
 
   it('tears down a live socket when its token family is revoked (4403)', async () => {

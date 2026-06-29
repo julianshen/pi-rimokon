@@ -91,6 +91,16 @@ describe('Broker — routing', () => {
     })
   })
 
+  it('preserves a numeric client-local id across the round-trip', () => {
+    const broker = new Broker()
+    const agent = mkAgent(broker, { sessionId: 's1', userId: 'u1' })
+    const client = mkClient(broker, 'u1')
+    broker.forwardFromClient(client.id, { type: 'steer', id: 42, session_id: 's1' })
+    const fwd = agent.sent[0]
+    broker.routeFromAgent('s1', { type: 'response', command: 'steer', id: fwd.id, success: true })
+    expect(client.socket.sent.at(-1)).toMatchObject({ type: 'response', id: 42 })
+  })
+
   it('blocks cross-user routing', () => {
     const broker = new Broker()
     const agent = mkAgent(broker, { sessionId: 's1', userId: 'u2' })
@@ -163,7 +173,18 @@ describe('Broker — start_session (§5.4)', () => {
       success: true,
       data: { session_id: 's1' },
     })
-    expect(agent.sent.at(-1)).toMatchObject({ type: 'prompt', text: 'fix the build' })
+    expect(agent.sent.at(-1)).toMatchObject({ type: 'prompt', message: 'fix the build' })
+  })
+
+  it('reserves the chosen agent (busy) so a second start_session sees none', () => {
+    const broker = new Broker()
+    mkAgent(broker, { sessionId: 's1', userId: 'u1', state: 'idle' })
+    const a = mkClient(broker, 'u1')
+    const b = mkClient(broker, 'u1')
+    broker.forwardFromClient(a.id, { type: 'start_session', id: 'c1', repo: 'acme/web', prompt: 'go' })
+    broker.forwardFromClient(b.id, { type: 'start_session', id: 'c2', repo: 'acme/web', prompt: 'go' })
+    expect(a.socket.sent.at(-1)).toMatchObject({ success: true })
+    expect(b.socket.sent.at(-1)).toMatchObject({ success: false, error: 'no_available_agent' })
   })
 
   it('replies no_available_agent when none are idle/accepting', () => {
@@ -219,14 +240,26 @@ describe('client handler (ws/client.ts)', () => {
     expect(cs.lastClose).toBe(CLOSE_CODES.PROTOCOL_ERROR)
   })
 
-  it('unregisters the client on close', () => {
+  it('closes with 1011 if forwarding throws synchronously', () => {
+    const broker = new Broker()
+    broker.forwardFromClient = () => {
+      throw new Error('boom')
+    }
+    const cs = new FakeSocket()
+    handleClientConnection(broker, cs, { userId: 'u1' })
+    cs.deliver({ type: 'steer', id: 'c1', session_id: 's1' })
+    expect(cs.lastClose).toBe(CLOSE_CODES.INTERNAL)
+  })
+
+  it('unregisters the client on close (no further delivery)', () => {
     const broker = new Broker()
     mkAgent(broker, { sessionId: 's1', userId: 'u1' })
     const cs = new FakeSocket()
     handleClientConnection(broker, cs, { userId: 'u1' })
-    cs.close(1000) // fires the close handler
-    // a later event reaches no client (unregistered) — just assert no throw
-    expect(() => broker.routeFromAgent('s1', { type: 'tool_update' })).not.toThrow()
+    cs.close(1000) // fires the close handler → unregister
+    const before = cs.frames().length
+    broker.routeFromAgent('s1', { type: 'tool_update' })
+    expect(cs.frames().length).toBe(before) // unregistered → received nothing new
   })
 })
 

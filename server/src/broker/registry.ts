@@ -26,7 +26,9 @@ export interface WebClientConn {
 
 interface Pending {
   clientId: string
-  originalId?: string
+  sessionId: string
+  // client-local ids may be strings or numbers (JSON-RPC-style clients)
+  originalId?: string | number
 }
 
 /**
@@ -53,6 +55,9 @@ export class Broker {
     const session = this.agents.get(sessionId)
     if (!session) return
     this.agents.delete(sessionId)
+    // Drop any in-flight command correlations for this session so they can't
+    // mis-route a late response after the agent is gone.
+    for (const [id, p] of this.pending) if (p.sessionId === sessionId) this.pending.delete(id)
     this.toUserClients(session.userId, {
       type: 'session_offline',
       session_id: sessionId,
@@ -168,6 +173,9 @@ export class Broker {
       )
       return
     }
+    // Reserve the agent immediately so a concurrent start_session can't also
+    // pick it before it reports busy via agent_state (spec §5.4).
+    this.setAgentState(agent.sessionId, 'busy')
     client.socket.send(
       JSON.stringify({
         type: 'response',
@@ -177,11 +185,12 @@ export class Broker {
         data: { session_id: agent.sessionId },
       }),
     )
-    // Hand the prompt to the chosen agent as a normal command (spec §5.4).
+    // Hand the prompt to the chosen agent as Pi's `prompt` command (spec §5.4;
+    // user text rides in `message`). Fire-and-forget: its terminal response
+    // isn't correlated to a client id — the client tracks progress via the
+    // session's fanned-out events.
     if (typeof envelope.prompt === 'string') {
-      const brokerId = newId('brk')
-      this.pending.set(brokerId, { clientId: client.clientId })
-      agent.socket.send(JSON.stringify({ type: 'prompt', id: brokerId, text: envelope.prompt }))
+      agent.socket.send(JSON.stringify({ type: 'prompt', id: newId('brk'), message: envelope.prompt }))
     }
   }
 
@@ -195,7 +204,11 @@ export class Broker {
     const brokerId = newId('brk')
     this.pending.set(brokerId, {
       clientId: client.clientId,
-      originalId: typeof envelope.id === 'string' ? envelope.id : undefined,
+      sessionId: agent.sessionId,
+      originalId:
+        typeof envelope.id === 'string' || typeof envelope.id === 'number'
+          ? envelope.id
+          : undefined,
     })
     // Strip the routing envelope (session_id) and rewrite id → broker-unique.
     const { session_id: _session, id: _id, ...rest } = envelope

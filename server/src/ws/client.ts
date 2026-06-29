@@ -1,3 +1,4 @@
+import { CLOSE_CODES } from '../../../shared/protocol.ts'
 import { newId } from '../auth/tokens.ts'
 import type { Broker, ClosableSocket } from '../broker/registry.ts'
 import { parseFrame } from './framing.ts'
@@ -28,7 +29,11 @@ export function handleClientConnection(
       socket.close(res.code)
       return
     }
-    broker.forwardFromClient(clientId, res.frame)
+    try {
+      broker.forwardFromClient(clientId, res.frame)
+    } catch {
+      socket.close(CLOSE_CODES.INTERNAL) // a synchronous routing/send failure → 1011
+    }
   })
 
   socket.on('close', () => broker.unregisterClient(clientId))
