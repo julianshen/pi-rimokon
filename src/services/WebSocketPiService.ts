@@ -69,6 +69,8 @@ export class WebSocketPiService implements PiService {
   /** Ephemeral, client-only sessions (e.g. the "no agent available" notice). */
   private readonly local = new Map<string, Session>()
   private readonly listeners = new Set<() => void>()
+  /** start_session command id → the optimistically-selected session id. */
+  private readonly pendingStarts = new Map<string, string>()
   private socket: PiSocket | null = null
   private stopped = false
   private attempts = 0
@@ -91,13 +93,16 @@ export class WebSocketPiService implements PiService {
     if (this.stopped) return
     try {
       const token = await this.opts.getAccessToken()
+      if (this.stopped) return // disposed mid-connect → don't open a leaked socket
       if (!token) throw new Error('not authenticated')
       const res = await this.opts.fetchFn(`${this.httpsBase}/client/ticket`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (this.stopped) return
       if (!res.ok) throw new Error(`ticket fetch failed: ${res.status}`)
       const { ticket } = (await res.json()) as { ticket: string }
+      if (this.stopped) return
       const wsUrl = `${this.opts.serverUrl.replace(/\/$/, '')}/client?ticket=${encodeURIComponent(ticket)}`
       const socket = this.opts.socketFactory(wsUrl)
       this.socket = socket
@@ -133,7 +138,9 @@ export class WebSocketPiService implements PiService {
   private onMessage(raw: unknown): void {
     let msg: Record<string, unknown>
     try {
-      msg = JSON.parse(String(raw))
+      const parsed = JSON.parse(String(raw))
+      if (!parsed || typeof parsed !== 'object') return
+      msg = parsed as Record<string, unknown>
     } catch {
       return
     }
@@ -163,8 +170,25 @@ export class WebSocketPiService implements PiService {
         }
         break
       }
-      case 'response':
-        break // command acks; correlation is handled optimistically in the UI
+      case 'response': {
+        // Most acks are handled optimistically; but a rejected start_session
+        // (the optimistic idle pick went stale) must surface to the user.
+        if (msg.command === 'start_session') {
+          const sid = this.pendingStarts.get(String(msg.id))
+          this.pendingStarts.delete(String(msg.id))
+          if (sid && msg.success === false) {
+            const s = this.sessions.get(sid) ?? this.local.get(sid)
+            if (s) {
+              s.thread = [
+                ...s.thread,
+                { role: 'agent', text: 'That agent is no longer available — it may have gone busy or offline. Try again.' },
+              ]
+              s.live = false
+            }
+          }
+        }
+        break
+      }
       default:
         this.foldEvent(msg)
     }
@@ -182,8 +206,10 @@ export class WebSocketPiService implements PiService {
     }
   }
 
-  private send(frame: Record<string, unknown>): void {
-    this.socket?.send(JSON.stringify({ ...frame, id: `c${(this.cmdSeq += 1)}` }))
+  private send(frame: Record<string, unknown>): string {
+    const id = `c${(this.cmdSeq += 1)}`
+    this.socket?.send(JSON.stringify({ ...frame, id }))
+    return id
   }
 
   // --- PiService ------------------------------------------------------------
@@ -211,7 +237,8 @@ export class WebSocketPiService implements PiService {
       (s) => !s.live && (!params.repo || s.repo === params.repo),
     )
     if (idle) {
-      this.send({ type: 'start_session', repo: params.repo, prompt: params.prompt, session_id: idle.id })
+      const id = this.send({ type: 'start_session', repo: params.repo, prompt: params.prompt, session_id: idle.id })
+      this.pendingStarts.set(id, idle.id)
       idle.thread = [...idle.thread, { role: 'user', text: params.prompt }]
       this.emit()
       return idle

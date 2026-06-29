@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { piAccessToken, piHttpBase } from '../lib/piServer'
 
+// Module-level so the default is referentially stable — otherwise a fresh arrow
+// each render would churn the load() useCallback + effect into a refetch loop.
+const defaultFetch: typeof fetch = (...args) => fetch(...args)
+
 interface TokenRow {
   jti: string
   family_id: string
@@ -23,7 +27,7 @@ function byFamily(tokens: TokenRow[]): TokenRow[] {
 export function AgentsCard({
   httpBase = piHttpBase,
   getToken = piAccessToken,
-  fetchFn = (...args: Parameters<typeof fetch>) => fetch(...args),
+  fetchFn = defaultFetch,
 }: {
   httpBase?: string
   getToken?: () => Promise<string | null>
@@ -34,6 +38,7 @@ export function AgentsCard({
 
   const load = useCallback(async () => {
     if (!httpBase) return
+    setError('') // clear a stale error on retry
     try {
       const token = await getToken()
       if (!token) throw new Error('Sign in to manage agents.')
@@ -52,16 +57,21 @@ export function AgentsCard({
 
   async function revoke(familyId: string) {
     if (!httpBase) return
-    const token = await getToken()
-    if (!token) return
-    await fetchFn(`${httpBase}/agent/tokens/revoke`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ family_id: familyId }),
-    })
-    setTokens((prev) =>
-      (prev ?? []).map((t) => (t.family_id === familyId ? { ...t, revoked_at: new Date().toISOString() } : t)),
-    )
+    try {
+      const token = await getToken()
+      if (!token) throw new Error('Sign in to manage agents.')
+      const res = await fetchFn(`${httpBase}/agent/tokens/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ family_id: familyId }),
+      })
+      if (!res.ok) throw new Error(`Could not revoke agent (${res.status}).`)
+      setTokens((prev) =>
+        (prev ?? []).map((t) => (t.family_id === familyId ? { ...t, revoked_at: new Date().toISOString() } : t)),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not revoke agent.')
+    }
   }
 
   const card = (children: React.ReactNode) => (

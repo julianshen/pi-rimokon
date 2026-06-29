@@ -42,6 +42,21 @@ describe('AgentsCard', () => {
     expect(await screen.findAllByRole('button', { name: /revoked/i })).not.toHaveLength(0)
   })
 
+  it('surfaces an error if revoke fails (no optimistic flip)', async () => {
+    const user = userEvent.setup()
+    // GET list ok; POST revoke fails.
+    const fetchFn = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+      if (init?.method === 'POST') return { ok: false, status: 500 } as Response
+      return { ok: true, status: 200, json: async () => ({ tokens: TOKENS }) } as unknown as Response
+    })
+    render(<AgentsCard httpBase="https://srv.test" getToken={async () => 'tok'} fetchFn={fetchFn} />)
+    await waitFor(() => expect(screen.getByText('laptop')).toBeInTheDocument())
+    await user.click(screen.getAllByRole('button', { name: /^revoke$/i })[0])
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/could not revoke/i))
+    // still revocable (not optimistically marked revoked)
+    expect(screen.getAllByRole('button', { name: /^revoke$/i }).length).toBeGreaterThan(0)
+  })
+
   it('shows an empty state when there are no tokens', async () => {
     render(<AgentsCard httpBase="https://srv.test" getToken={async () => 'tok'} fetchFn={listFetch([])} />)
     await waitFor(() => expect(screen.getByText(/no agents authorized/i)).toBeInTheDocument())

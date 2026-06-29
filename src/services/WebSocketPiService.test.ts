@@ -114,6 +114,7 @@ describe('WebSocketPiService — presence mapping', () => {
     deliver(h, { type: 'agent_message', session_id: 's1', message: 'hello there' })
     expect(h.svc.getSession('s1')?.thread.at(-1)).toMatchObject({ role: 'agent', text: 'hello there' })
     h.sockets.at(-1)?.onmessage?.({ data: '{bad json' }) // no throw
+    h.sockets.at(-1)?.onmessage?.({ data: 'null' }) // non-object payload: no throw
     deliver(h, { type: 'response', id: 'c1', success: true }) // ack: no-op
     h.svc.dispose()
   })
@@ -126,6 +127,16 @@ describe('WebSocketPiService — commands', () => {
     const sess = h.svc.startSession({ prompt: 'do it', repo: 'acme/web', model: 'pi', skills: {} })
     expect(sess.id).toBe('s1')
     expect(h.sockets.at(-1)?.sent.at(-1)).toMatchObject({ type: 'start_session', prompt: 'do it', session_id: 's1' })
+    h.svc.dispose()
+  })
+
+  it('surfaces a rejected start_session (stale idle pick)', async () => {
+    const h = await makeService()
+    deliver(h, SNAPSHOT)
+    h.svc.startSession({ prompt: 'do it', repo: 'acme/web', model: 'pi', skills: {} })
+    const startId = h.sockets.at(-1)?.sent.at(-1)?.id
+    deliver(h, { type: 'response', command: 'start_session', id: startId, success: false, error: 'no_available_agent' })
+    expect(h.svc.getSession('s1')?.thread.at(-1)?.text).toMatch(/no longer available/i)
     h.svc.dispose()
   })
 

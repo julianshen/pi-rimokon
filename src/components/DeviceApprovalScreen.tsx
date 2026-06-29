@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { piAccessToken, piHttpBase } from '../lib/piServer'
 
+const defaultFetch: typeof fetch = (...args) => fetch(...args)
+
 type Phase = 'idle' | 'working' | 'approved' | 'denied' | 'error'
 
 function readCodeFromUrl(): string {
@@ -17,7 +19,7 @@ function readCodeFromUrl(): string {
 export function DeviceApprovalScreen({
   httpBase = piHttpBase,
   getToken = piAccessToken,
-  fetchFn = (...args: Parameters<typeof fetch>) => fetch(...args),
+  fetchFn = defaultFetch,
 }: {
   httpBase?: string
   getToken?: () => Promise<string | null>
@@ -37,7 +39,7 @@ export function DeviceApprovalScreen({
       const res = await fetchFn(`${httpBase}/oauth/device/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ user_code: code.trim(), decision }),
+        body: JSON.stringify({ user_code: code.trim().toUpperCase(), decision }),
       })
       if (!res.ok) throw new Error(`Could not ${decision} this code (${res.status}).`)
       setPhase(decision === 'approve' ? 'approved' : 'denied')

@@ -86,9 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase) return
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
-          // Come back to wherever the app is served (localhost in dev, the
-          // Vercel domain in prod) so the same client works in every env.
-          options: { redirectTo: window.location.origin },
+          // Return to the exact URL the user was on — origin in the common
+          // case, but preserving the path + query for deep links like
+          // /device?code=… so the device approval survives sign-in.
+          options: { redirectTo: window.location.href },
         })
         // signInWithOAuth resolves with { error } instead of rejecting; surface
         // it so the caller can stop its loading state and show a message.
