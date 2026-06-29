@@ -1,6 +1,7 @@
 import express, { type Express } from 'express'
 import type { AuthContext } from './auth/context.ts'
 import type { TicketStore } from './broker/tickets.ts'
+import { agentsRouter } from './http/agents.ts'
 import { clientRouter } from './http/client.ts'
 import { healthRouter } from './http/health.ts'
 import { oauthRouter } from './http/oauth.ts'
@@ -35,7 +36,10 @@ export function createApp(ctx?: AuthContext, tickets?: TicketStore): Express {
 
   app.use(express.json())
   app.use(healthRouter())
-  if (ctx) app.use(oauthRouter(ctx))
+  if (ctx) {
+    app.use(oauthRouter(ctx))
+    app.use(agentsRouter(ctx))
+  }
   if (ctx && tickets) app.use(clientRouter(ctx, tickets))
   return app
 }

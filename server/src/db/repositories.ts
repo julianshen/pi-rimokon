@@ -123,6 +123,24 @@ export const agentTokens = {
     return rows[0]
   },
 
+  /** A user's agent tokens, newest first (Settings → Agents, spec §8). */
+  async listByUser(db: Db, userId: string): Promise<AgentTokenRow[]> {
+    const { rows } = await db.query<AgentTokenRow>(
+      `SELECT * FROM agent_tokens WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId],
+    )
+    return rows
+  },
+
+  /** Whether a token family is owned by the given user (revoke authorization). */
+  async familyBelongsToUser(db: Db, familyId: string, userId: string): Promise<boolean> {
+    const { rows } = await db.query(
+      `SELECT 1 FROM agent_tokens WHERE family_id = $1 AND user_id = $2 LIMIT 1`,
+      [familyId, userId],
+    )
+    return rows.length > 0
+  },
+
   /** True when the token's jti exists and neither it nor its family is revoked. */
   async isActive(db: Db, jti: string): Promise<boolean> {
     const { rows } = await db.query<{ active: boolean }>(
