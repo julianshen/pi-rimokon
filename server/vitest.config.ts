@@ -15,6 +15,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/index.ts', // http/ws bootstrap (needs a live port)
+        'src/ws/attach.ts', // ws.WebSocket <-> http upgrade glue (integration-tested)
         'src/db/client.ts', // pg Pool factory (needs a live DB)
         'src/db/runMigrate.ts', // migration CLI (needs a live DB)
         'src/auth/supabaseJwt.ts', // wraps jose remote JWKS fetch (stubbed in tests)

@@ -1,11 +1,14 @@
 import 'dotenv/config'
 import { createServer } from 'node:http'
+import { CLOSE_CODES } from '../../shared/protocol.ts'
 import { createApp } from './app.ts'
 import { loadConfig } from './config.ts'
 import { type AuthContext, DEFAULT_TTL } from './auth/context.ts'
 import { loadSigningKeys } from './auth/keys.ts'
 import { createSupabaseVerifier } from './auth/supabaseJwt.ts'
+import { SessionHub } from './broker/registry.ts'
 import { createPool } from './db/client.ts'
+import { attachAgentServer } from './ws/attach.ts'
 
 /**
  * Server bootstrap. One `http.Server` hosts the Express routes and (from M2)
@@ -14,6 +17,7 @@ import { createPool } from './db/client.ts'
  */
 const config = loadConfig()
 const keys = await loadSigningKeys(config.AGENT_JWT_PRIVATE_KEY, config.AGENT_JWT_PUBLIC_KEY)
+const hub = new SessionHub()
 
 const ctx: AuthContext = {
   db: createPool(config.DATABASE_URL),
@@ -24,9 +28,11 @@ const ctx: AuthContext = {
   verifySupabaseToken: createSupabaseVerifier(config.SUPABASE_URL),
   now: () => Math.floor(Date.now() / 1000),
   ttl: DEFAULT_TTL,
+  onFamilyRevoked: (familyId) => hub.closeFamily(familyId, CLOSE_CODES.FORBIDDEN),
 }
 
 const server = createServer(createApp(ctx))
+attachAgentServer(server, ctx, hub)
 server.listen(config.PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[pi-remote-server] listening on :${config.PORT}`)

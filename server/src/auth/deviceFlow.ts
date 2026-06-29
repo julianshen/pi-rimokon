@@ -203,6 +203,8 @@ async function revokeFamily(ctx: AuthContext, familyId: string, at: Date): Promi
     refreshTokens.revokeFamily(ctx.db, familyId, at),
     agentTokens.revokeFamily(ctx.db, familyId, at),
   ])
+  // Tear down any live sockets bound to this family (spec §3.2 → 4403).
+  ctx.onFamilyRevoked?.(familyId)
 }
 
 async function refreshGrant(ctx: AuthContext, refreshToken?: string): Promise<TokenBundle> {

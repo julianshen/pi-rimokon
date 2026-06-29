@@ -34,4 +34,10 @@ export interface AuthContext {
   /** Current time in epoch seconds; injectable for deterministic tests. */
   now: () => number
   ttl: AuthTtl
+  /**
+   * Called when a token family is revoked (revoke endpoint or refresh reuse).
+   * The WebSocket layer uses this to tear down live sockets with 4403
+   * (spec §3.2). Optional so the auth module has no socket dependency.
+   */
+  onFamilyRevoked?: (familyId: string) => void
 }
