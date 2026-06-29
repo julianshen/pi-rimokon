@@ -38,6 +38,7 @@ describe('loadConfig', () => {
   it('throws when the signing keys are missing', () => {
     const { AGENT_JWT_PRIVATE_KEY, ...rest } = BASE as Record<string, string>
     void AGENT_JWT_PRIVATE_KEY
+    expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(ConfigError)
     expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(/AGENT_JWT_PRIVATE_KEY/)
   })
 

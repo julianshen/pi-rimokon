@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { exportPKCS8, exportSPKI, generateKeyPair } from 'jose'
 import { type AuthContext, DEFAULT_TTL } from '../src/auth/context.ts'
 import { loadSigningKeys, type SigningKeys } from '../src/auth/keys.ts'
-import type { SupabaseVerifier } from '../src/auth/supabaseJwt.ts'
+import { type SupabaseVerifier, SupabaseAuthError } from '../src/auth/supabaseJwt.ts'
 import { applyMigrations } from '../src/db/migrate.ts'
 
 /** A stable test user id (UUID, since user_id columns are typed UUID). */
@@ -50,7 +50,7 @@ export async function makeHarness(
     overrides.verifySupabaseToken ??
     (async (token: string) => {
       if (token === 'valid') return { sub: TEST_USER }
-      throw new Error('invalid supabase token')
+      throw new SupabaseAuthError()
     })
 
   const ctx: AuthContext = {

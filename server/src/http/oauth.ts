@@ -9,6 +9,7 @@ import {
   tokenGrant,
 } from '../auth/deviceFlow.ts'
 import { jwks } from '../auth/keys.ts'
+import { SupabaseAuthError } from '../auth/supabaseJwt.ts'
 
 /** Wrap an async handler so thrown OAuthErrors map to `{ error }` responses. */
 function handle(fn: (req: Request, res: Response) => Promise<void>): RequestHandler {
@@ -26,15 +27,31 @@ function handle(fn: (req: Request, res: Response) => Promise<void>): RequestHand
 }
 
 function bearer(req: Request): string | undefined {
-  const header = req.header('authorization') ?? ''
-  const match = /^Bearer (.+)$/.exec(header)
-  return match?.[1]
+  const match = /^Bearer\s+(.+)$/i.exec((req.header('authorization') ?? '').trim())
+  return match?.[1]?.trim()
 }
 
 /** All device-flow + token + JWKS routes (spec §3). */
 export function oauthRouter(ctx: AuthContext): Router {
   const router = Router()
   const form = express.urlencoded({ extended: false })
+
+  // The SPA approval page is a different origin from the server (spec §7/§8.1),
+  // and its JSON+Authorization request triggers a CORS preflight.
+  if (ctx.allowedOrigin) {
+    const origin = ctx.allowedOrigin
+    router.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', origin)
+      res.header('Vary', 'Origin')
+      res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+      res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(204)
+        return
+      }
+      next()
+    })
+  }
 
   router.get('/.well-known/jwks.json', (_req, res) => {
     res.status(200).json(jwks(ctx.keys))
@@ -67,9 +84,10 @@ export function oauthRouter(ctx: AuthContext): Router {
         })
         res.status(200).json(result)
       } catch (err) {
-        if (err instanceof OAuthError) throw err
-        // Any Supabase verification failure is an auth failure.
-        throw new OAuthError('invalid_token', 401)
+        // Only genuine token-verification failures are 401; OAuth + unexpected
+        // errors propagate to their own mappings (4xx / 500).
+        if (err instanceof SupabaseAuthError) throw new OAuthError('invalid_token', 401)
+        throw err
       }
     }),
   )
@@ -80,6 +98,7 @@ export function oauthRouter(ctx: AuthContext): Router {
     handle(async (req, res) => {
       const bundle = await tokenGrant(ctx, {
         grantType: String(req.body.grant_type ?? ''),
+        clientId: req.body.client_id ? String(req.body.client_id) : undefined,
         deviceCode: req.body.device_code ? String(req.body.device_code) : undefined,
         refreshToken: req.body.refresh_token ? String(req.body.refresh_token) : undefined,
       })

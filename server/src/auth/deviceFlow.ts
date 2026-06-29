@@ -132,24 +132,22 @@ export async function approveDevice(
 
   const row = await deviceCodes.findByUserCode(ctx.db, args.userCode)
   if (!row || row.status === 'consumed') throw new OAuthError('invalid_request', 404)
-  if (ctx.now() * 1000 > new Date(row.expires_at).getTime()) throw new OAuthError('expired_token', 410)
-  if (row.status !== 'pending') throw new OAuthError('invalid_request', 409)
+  if (ctx.now() * 1000 >= new Date(row.expires_at).getTime()) throw new OAuthError('expired_token', 410)
 
-  if (args.decision === 'deny') {
-    await deviceCodes.setDecision(ctx.db, args.userCode, 'denied', null)
-    return { status: 'denied' }
-  }
-  await deviceCodes.setDecision(ctx.db, args.userCode, 'approved', sub)
-  return { status: 'approved' }
+  const status = args.decision === 'deny' ? 'denied' : 'approved'
+  // Atomic compare-and-set: only the first decision on a pending code wins.
+  const claimed = await deviceCodes.decide(ctx.db, args.userCode, status, status === 'approved' ? sub : null)
+  if (!claimed) throw new OAuthError('invalid_request', 409)
+  return { status }
 }
 
 /** `POST /oauth/device/token` — dispatch by `grant_type` (spec §3.1). */
 export async function tokenGrant(
   ctx: AuthContext,
-  args: { grantType: string; deviceCode?: string; refreshToken?: string },
+  args: { grantType: string; clientId?: string; deviceCode?: string; refreshToken?: string },
 ): Promise<TokenBundle> {
   if (args.grantType === 'urn:ietf:params:oauth:grant-type:device_code') {
-    return pollDeviceToken(ctx, args.deviceCode)
+    return pollDeviceToken(ctx, args.clientId, args.deviceCode)
   }
   if (args.grantType === 'refresh_token') {
     return refreshGrant(ctx, args.refreshToken)
@@ -157,14 +155,20 @@ export async function tokenGrant(
   throw new OAuthError('unsupported_grant_type')
 }
 
-async function pollDeviceToken(ctx: AuthContext, deviceCode?: string): Promise<TokenBundle> {
-  if (!deviceCode) throw new OAuthError('invalid_request')
+async function pollDeviceToken(
+  ctx: AuthContext,
+  clientId?: string,
+  deviceCode?: string,
+): Promise<TokenBundle> {
+  if (!clientId || !deviceCode) throw new OAuthError('invalid_request')
   const hash = hashToken(deviceCode)
   const row = await deviceCodes.findByHash(ctx.db, hash)
   if (!row) throw new OAuthError('invalid_grant')
+  // A device code may only be redeemed by the client it was issued to.
+  if (row.client_id !== clientId) throw new OAuthError('invalid_grant')
 
   const now = ctx.now()
-  if (now * 1000 > new Date(row.expires_at).getTime()) throw new OAuthError('expired_token')
+  if (now * 1000 >= new Date(row.expires_at).getTime()) throw new OAuthError('expired_token')
 
   // Poll-rate limiting (spec §3.1 slow_down / §7).
   if (row.last_polled_at && now * 1000 - new Date(row.last_polled_at).getTime() < row.poll_interval * 1000) {
@@ -180,14 +184,25 @@ async function pollDeviceToken(ctx: AuthContext, deviceCode?: string): Promise<T
     case 'consumed':
       throw new OAuthError('invalid_grant')
     case 'approved': {
-      await deviceCodes.markConsumed(ctx.db, hash)
+      // Atomically claim the approved code; a concurrent poll that loses the
+      // race gets no row and is rejected rather than minting a second bundle.
+      const claimed = await deviceCodes.claimApproved(ctx.db, hash)
+      if (!claimed) throw new OAuthError('invalid_grant')
       return issueTokenBundle(ctx, {
-        userId: row.user_id as string,
+        userId: claimed.userId,
         scope: 'agent',
         familyId: newId('fam'),
       })
     }
   }
+}
+
+/** Revoke an entire token family (refresh tokens + agent tokens) at once. */
+async function revokeFamily(ctx: AuthContext, familyId: string, at: Date): Promise<void> {
+  await Promise.all([
+    refreshTokens.revokeFamily(ctx.db, familyId, at),
+    agentTokens.revokeFamily(ctx.db, familyId, at),
+  ])
 }
 
 async function refreshGrant(ctx: AuthContext, refreshToken?: string): Promise<TokenBundle> {
@@ -198,20 +213,25 @@ async function refreshGrant(ctx: AuthContext, refreshToken?: string): Promise<To
 
   // Reuse detection: a token already rotated/used → revoke the whole family.
   if (row.used_at || row.replaced_by) {
-    await Promise.all([
-      refreshTokens.revokeFamily(ctx.db, row.family_id, secondsToDate(now)),
-      agentTokens.revokeFamily(ctx.db, row.family_id, secondsToDate(now)),
-    ])
+    await revokeFamily(ctx, row.family_id, secondsToDate(now))
     throw new OAuthError('invalid_grant')
   }
-  if (now * 1000 > new Date(row.expires_at).getTime()) throw new OAuthError('invalid_grant')
+  if (now * 1000 >= new Date(row.expires_at).getTime()) throw new OAuthError('invalid_grant')
+
+  // Atomically claim the token before minting its successor. If a concurrent
+  // request already claimed it, treat the replay as reuse and revoke the family.
+  const claimed = await refreshTokens.claim(ctx.db, row.token_hash, secondsToDate(now))
+  if (!claimed) {
+    await revokeFamily(ctx, row.family_id, secondsToDate(now))
+    throw new OAuthError('invalid_grant')
+  }
 
   const bundle = await issueTokenBundle(ctx, {
-    userId: row.user_id,
+    userId: claimed.user_id,
     scope: 'agent',
-    familyId: row.family_id,
+    familyId: claimed.family_id,
   })
-  await refreshTokens.markRotated(ctx.db, row.token_hash, hashToken(bundle.refresh_token), secondsToDate(now))
+  await refreshTokens.setReplacedBy(ctx.db, row.token_hash, hashToken(bundle.refresh_token))
   return bundle
 }
 
@@ -223,9 +243,5 @@ export async function revokeToken(ctx: AuthContext, token?: string): Promise<voi
   if (!token) return
   const row = await refreshTokens.findByHash(ctx.db, hashToken(token))
   if (!row) return
-  const at = secondsToDate(ctx.now())
-  await Promise.all([
-    refreshTokens.revokeFamily(ctx.db, row.family_id, at),
-    agentTokens.revokeFamily(ctx.db, row.family_id, at),
-  ])
+  await revokeFamily(ctx, row.family_id, secondsToDate(ctx.now()))
 }

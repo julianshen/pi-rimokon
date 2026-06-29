@@ -15,9 +15,13 @@ const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
 
 /** Run the issue → approve → first-poll happy path; returns the token bundle. */
 async function authorize(h: Awaited<ReturnType<typeof makeHarness>>) {
-  const code = await issueDeviceCode(h.ctx, { clientId: 'pi-agent-cli', scope: 'agent' })
+  const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
   await approveDevice(h.ctx, { supabaseToken: 'valid', userCode: code.user_code, decision: 'approve' })
-  const bundle = await tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code })
+  const bundle = await tokenGrant(h.ctx, {
+    grantType: DEVICE_GRANT,
+    clientId: 'cli',
+    deviceCode: code.device_code,
+  })
   return { code, bundle }
 }
 
@@ -44,7 +48,7 @@ describe('device authorization grant', () => {
     const { code } = await authorize(h)
     h.clock.tick(h.ctx.ttl.pollIntervalSec + 1) // past the poll interval, so not slow_down
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'invalid_grant' })
   })
 
@@ -52,7 +56,7 @@ describe('device authorization grant', () => {
     const h = await makeHarness()
     const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'authorization_pending' })
   })
 
@@ -60,10 +64,10 @@ describe('device authorization grant', () => {
     const h = await makeHarness()
     const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'authorization_pending' })
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'slow_down' })
   })
 
@@ -72,7 +76,7 @@ describe('device authorization grant', () => {
     const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
     await approveDevice(h.ctx, { supabaseToken: 'valid', userCode: code.user_code, decision: 'deny' })
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'access_denied' })
   })
 
@@ -81,14 +85,14 @@ describe('device authorization grant', () => {
     const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
     h.clock.tick(h.ctx.ttl.deviceCodeSec + 1)
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: code.device_code }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: code.device_code }),
     ).rejects.toMatchObject({ error: 'expired_token' })
   })
 
   it('rejects an unknown device code', async () => {
     const h = await makeHarness()
     await expect(
-      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, deviceCode: 'nope' }),
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'cli', deviceCode: 'nope' }),
     ).rejects.toMatchObject({ error: 'invalid_grant' })
   })
 
@@ -97,6 +101,15 @@ describe('device authorization grant', () => {
     await expect(
       tokenGrant(h.ctx, { grantType: 'password' }),
     ).rejects.toMatchObject({ error: 'unsupported_grant_type' })
+  })
+
+  it('rejects redemption by a different client_id', async () => {
+    const h = await makeHarness()
+    const code = await issueDeviceCode(h.ctx, { clientId: 'cli', scope: 'agent' })
+    await approveDevice(h.ctx, { supabaseToken: 'valid', userCode: code.user_code, decision: 'approve' })
+    await expect(
+      tokenGrant(h.ctx, { grantType: DEVICE_GRANT, clientId: 'other', deviceCode: code.device_code }),
+    ).rejects.toMatchObject({ error: 'invalid_grant' })
   })
 })
 

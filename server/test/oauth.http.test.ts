@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../src/app.ts'
-import { makeHarness } from './helpers.ts'
+import { makeHarness, TEST_USER } from './helpers.ts'
 
 const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
 
@@ -31,7 +31,7 @@ describe('OAuth HTTP routes', () => {
     const pending = await request(app)
       .post('/oauth/device/token')
       .type('form')
-      .send({ grant_type: DEVICE_GRANT, device_code: code.body.device_code })
+      .send({ grant_type: DEVICE_GRANT, client_id: 'pi-agent-cli', device_code: code.body.device_code })
     expect(pending.status).toBe(400)
     expect(pending.body.error).toBe('authorization_pending')
 
@@ -48,7 +48,7 @@ describe('OAuth HTTP routes', () => {
     const token = await request(app)
       .post('/oauth/device/token')
       .type('form')
-      .send({ grant_type: DEVICE_GRANT, device_code: code.body.device_code })
+      .send({ grant_type: DEVICE_GRANT, client_id: 'pi-agent-cli', device_code: code.body.device_code })
     expect(token.status).toBe(200)
     expect(token.body.access_token).toBeTruthy()
     expect(token.body.refresh_token).toBeTruthy()
@@ -82,6 +82,33 @@ describe('OAuth HTTP routes', () => {
       .send({ client_id: 'cli' })
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('server_error')
+  })
+
+  it('maps a non-auth failure during approve to 500 (not 401)', async () => {
+    const h = await makeHarness()
+    // Supabase verification succeeds, but the DB lookup afterwards blows up.
+    const brokenCtx = {
+      ...h.ctx,
+      verifySupabaseToken: async () => ({ sub: TEST_USER }),
+      db: { query: () => Promise.reject(new Error('boom')) },
+    }
+    const res = await request(createApp(brokenCtx))
+      .post('/oauth/device/approve')
+      .set('Authorization', 'Bearer whatever')
+      .send({ user_code: 'WDJB-MJHT', decision: 'approve' })
+    expect(res.status).toBe(500)
+  })
+
+  it('answers CORS preflight and sets the allowed origin', async () => {
+    const h = await makeHarness()
+    const app = createApp({ ...h.ctx, allowedOrigin: 'https://app.test' })
+
+    const preflight = await request(app).options('/oauth/device/approve')
+    expect(preflight.status).toBe(204)
+    expect(preflight.headers['access-control-allow-origin']).toBe('https://app.test')
+
+    const jwks = await request(app).get('/.well-known/jwks.json')
+    expect(jwks.headers['access-control-allow-origin']).toBe('https://app.test')
   })
 
   it('maps an invalid Supabase token to 401', async () => {

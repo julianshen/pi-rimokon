@@ -56,21 +56,36 @@ export const deviceCodes = {
     return rows[0]
   },
 
-  async setDecision(
+  /**
+   * Atomically record a decision, but only while the code is still `pending`.
+   * Returns true iff this call won the transition (guards concurrent approvals).
+   */
+  async decide(
     db: Db,
     userCode: string,
     status: 'approved' | 'denied',
     userId: string | null,
-  ): Promise<void> {
-    await db.query(`UPDATE device_codes SET status = $2, user_id = $3 WHERE user_code = $1`, [
-      userCode,
-      status,
-      userId,
-    ])
+  ): Promise<boolean> {
+    const { rows } = await db.query<{ user_code: string }>(
+      `UPDATE device_codes SET status = $2, user_id = $3
+       WHERE user_code = $1 AND status = 'pending' RETURNING user_code`,
+      [userCode, status, userId],
+    )
+    return rows.length === 1
   },
 
-  async markConsumed(db: Db, hash: string): Promise<void> {
-    await db.query(`UPDATE device_codes SET status = 'consumed' WHERE device_code_hash = $1`, [hash])
+  /**
+   * Atomically consume an approved code (single-use). Returns the bound
+   * `user_id` iff this call flipped it from `approved` → `consumed`, else
+   * undefined — so concurrent polls cannot both mint tokens.
+   */
+  async claimApproved(db: Db, hash: string): Promise<{ userId: string } | undefined> {
+    const { rows } = await db.query<{ user_id: string }>(
+      `UPDATE device_codes SET status = 'consumed'
+       WHERE device_code_hash = $1 AND status = 'approved' RETURNING user_id`,
+      [hash],
+    )
+    return rows[0] ? { userId: rows[0].user_id } : undefined
   },
 
   async touchPolled(db: Db, hash: string, at: Date): Promise<void> {
@@ -163,11 +178,33 @@ export const refreshTokens = {
     return rows[0]
   },
 
-  async markRotated(db: Db, hash: string, replacedBy: string, at: Date): Promise<void> {
-    await db.query(
-      `UPDATE refresh_tokens SET used_at = $2, replaced_by = $3 WHERE token_hash = $1`,
-      [hash, at.toISOString(), replacedBy],
+  /**
+   * Atomically claim an unused refresh token (sets `used_at` only while it is
+   * still NULL). Returns the family/user/expiry iff this call won the race, so
+   * concurrent rotations of the same token cannot both succeed.
+   */
+  async claim(
+    db: Db,
+    hash: string,
+    at: Date,
+  ): Promise<Pick<RefreshTokenRow, 'family_id' | 'user_id' | 'expires_at'> | undefined> {
+    const { rows } = await db.query<
+      Pick<RefreshTokenRow, 'family_id' | 'user_id' | 'expires_at'>
+    >(
+      `UPDATE refresh_tokens SET used_at = $2
+       WHERE token_hash = $1 AND used_at IS NULL
+       RETURNING family_id, user_id, expires_at`,
+      [hash, at.toISOString()],
     )
+    return rows[0]
+  },
+
+  /** Record which token replaced this one (the rotation successor). */
+  async setReplacedBy(db: Db, hash: string, replacedBy: string): Promise<void> {
+    await db.query(`UPDATE refresh_tokens SET replaced_by = $2 WHERE token_hash = $1`, [
+      hash,
+      replacedBy,
+    ])
   },
 
   async revokeFamily(db: Db, familyId: string, at: Date): Promise<void> {

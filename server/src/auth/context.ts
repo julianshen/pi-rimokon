@@ -28,6 +28,8 @@ export interface AuthContext {
   issuer: string
   /** Public `verification_uri` shown to the user (the SPA /device page). */
   verificationUri: string
+  /** Browser origin allowed to call the device endpoints (CORS); spec §7. */
+  allowedOrigin?: string
   verifySupabaseToken: SupabaseVerifier
   /** Current time in epoch seconds; injectable for deterministic tests. */
   now: () => number

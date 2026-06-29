@@ -4,7 +4,9 @@ import {
   importPKCS8,
   importSPKI,
   type JWK,
+  jwtVerify,
   type KeyLike,
+  SignJWT,
 } from 'jose'
 
 /** RS256 alg used for all agent tokens + the published JWKS. */
@@ -29,6 +31,20 @@ export async function loadSigningKeys(
 ): Promise<SigningKeys> {
   const privateKey = await importPKCS8(privatePem, SIGNING_ALG)
   const publicKey = await importSPKI(publicPem, SIGNING_ALG)
+
+  // Fail fast if the PEMs are not a matching pair — otherwise the server would
+  // boot and mint JWTs that its own JWKS/verify path can never validate.
+  try {
+    const probe = await new SignJWT({})
+      .setProtectedHeader({ alg: SIGNING_ALG })
+      .setIssuedAt()
+      .setExpirationTime('1m')
+      .sign(privateKey)
+    await jwtVerify(probe, publicKey, { algorithms: [SIGNING_ALG] })
+  } catch {
+    throw new Error('AGENT_JWT_PRIVATE_KEY and AGENT_JWT_PUBLIC_KEY are not a matching keypair')
+  }
+
   const jwk = await exportJWK(publicKey)
   const kid = await calculateJwkThumbprint(jwk)
   return {
