@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { createPiService } from './services/createPiService'
 import { piAccessToken, piServerUrl } from './lib/piServer'
 import { useAppStore } from './hooks/useAppStore'
@@ -16,6 +16,9 @@ export default function App() {
   // The service is the seam to the Pi Remote Server. With VITE_PI_SERVER_URL set
   // it talks to the live /client socket; otherwise it falls back to the mock.
   const service = useMemo(() => createPiService(piServerUrl, piAccessToken), [])
+  // Tear down the live socket when the app unmounts (e.g. on sign-out) so a
+  // stale connection isn't left registered under the previous user.
+  useEffect(() => () => (service as { dispose?: () => void }).dispose?.(), [service])
   const { state, patch, mobile, sessions, activeSession, actions } = useAppStore(service)
 
   return (

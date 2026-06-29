@@ -7,7 +7,8 @@ type Phase = 'idle' | 'working' | 'approved' | 'denied' | 'error'
 
 function readCodeFromUrl(): string {
   if (typeof window === 'undefined') return ''
-  return new URLSearchParams(window.location.search).get('code') ?? ''
+  // Normalize up front so the displayed code matches what's submitted.
+  return (new URLSearchParams(window.location.search).get('code') ?? '').toUpperCase()
 }
 
 /**

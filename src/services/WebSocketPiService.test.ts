@@ -140,6 +140,31 @@ describe('WebSocketPiService — commands', () => {
     h.svc.dispose()
   })
 
+  it('skips observer agents (accept_task:false) when selecting', async () => {
+    const h = await makeService()
+    deliver(h, {
+      type: 'sessions',
+      sessions: [
+        { session_id: 'obs', repo: 'acme/x', state: 'idle', accept_task: false },
+        { session_id: 'task', repo: 'acme/x', state: 'idle', accept_task: true },
+      ],
+    })
+    const sess = h.svc.startSession({ prompt: 'go', repo: 'acme/x', model: 'pi', skills: {} })
+    expect(sess.id).toBe('task')
+    h.svc.dispose()
+  })
+
+  it('sendMessage on a client-only session echoes locally without sending', async () => {
+    const h = await makeService()
+    deliver(h, SNAPSHOT)
+    const local = h.svc.startSession({ prompt: 'x', repo: 'no/such', model: 'pi', skills: {} })
+    const before = h.sockets.at(-1)?.sent.length ?? 0
+    h.svc.sendMessage(local.id, 'hi', { steer: false })
+    expect(h.sockets.at(-1)?.sent.length).toBe(before) // nothing forwarded to the broker
+    expect(h.svc.getSession(local.id)?.thread.at(-1)).toMatchObject({ role: 'user', text: 'hi' })
+    h.svc.dispose()
+  })
+
   it('startSession surfaces a notice when no idle agent matches', async () => {
     const h = await makeService()
     deliver(h, SNAPSHOT) // s1 idle but repo acme/web; ask for a different repo

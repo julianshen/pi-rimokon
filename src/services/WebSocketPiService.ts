@@ -66,6 +66,8 @@ export class WebSocketPiService implements PiService {
     Pick<WebSocketPiServiceOptions, 'serverUrl' | 'getAccessToken'>
   private readonly httpsBase: string
   private readonly sessions = new Map<string, Session>()
+  /** Raw broker descriptors, kept so selection can honor accept_task/state. */
+  private readonly descriptors = new Map<string, BrokerSession>()
   /** Ephemeral, client-only sessions (e.g. the "no agent available" notice). */
   private readonly local = new Map<string, Session>()
   private readonly listeners = new Set<() => void>()
@@ -147,22 +149,29 @@ export class WebSocketPiService implements PiService {
     switch (msg.type) {
       case 'sessions': {
         this.sessions.clear()
+        this.descriptors.clear()
         for (const d of (msg.sessions as BrokerSession[]) ?? []) {
           this.sessions.set(d.session_id, sessionFromDescriptor(d))
+          this.descriptors.set(d.session_id, d)
         }
         break
       }
       case 'session_online': {
         const d = msg as unknown as BrokerSession
         this.sessions.set(d.session_id, sessionFromDescriptor(d))
+        this.descriptors.set(d.session_id, d)
         break
       }
       case 'session_offline': {
         this.sessions.delete(String(msg.session_id))
+        this.descriptors.delete(String(msg.session_id))
         break
       }
       case 'agent_state': {
-        const s = this.sessions.get(String(msg.session_id))
+        const id = String(msg.session_id)
+        const desc = this.descriptors.get(id)
+        if (desc) desc.state = String(msg.state)
+        const s = this.sessions.get(id)
         if (s) {
           s.status = statusFor(String(msg.state))
           s.live = msg.state === 'busy'
@@ -233,9 +242,11 @@ export class WebSocketPiService implements PiService {
 
   startSession(params: StartSessionParams): Session {
     // §5.4: the browser can't spawn — select an already-connected idle agent.
-    const idle = [...this.sessions.values()].find(
-      (s) => !s.live && (!params.repo || s.repo === params.repo),
+    // Match the server's selectIdleAgent: accept_task + not busy + repo.
+    const pick = [...this.descriptors.values()].find(
+      (d) => d.accept_task && d.state !== 'busy' && (!params.repo || (d.repo ?? undefined) === params.repo),
     )
+    const idle = pick ? this.sessions.get(pick.session_id) : undefined
     if (idle) {
       const id = this.send({ type: 'start_session', repo: params.repo, prompt: params.prompt, session_id: idle.id })
       this.pendingStarts.set(id, idle.id)
@@ -261,6 +272,13 @@ export class WebSocketPiService implements PiService {
   }
 
   sendMessage(sessionId: string, text: string, _opts: SendMessageOptions): void {
+    // A client-only notice session has no backing agent — just echo locally.
+    const localSession = this.local.get(sessionId)
+    if (localSession) {
+      localSession.thread = [...localSession.thread, { role: 'user', text }]
+      this.emit()
+      return
+    }
     const s = this.sessions.get(sessionId)
     if (s) {
       s.thread = [...s.thread, { role: 'user', text }]
