@@ -24,6 +24,16 @@ export const ConfigSchema = z.object({
   // --- Supabase identity (spec §3.1) ---
   /** Supabase project URL; device approval verifies the user's Supabase JWT. */
   SUPABASE_URL: z.string().url(),
+
+  // --- Limits / hardening (spec §7) ---
+  /** Max concurrent agent sessions per user. */
+  MAX_SESSIONS_PER_USER: z.coerce.number().int().positive().default(20),
+  /** Max concurrent web clients per user. */
+  MAX_CLIENTS_PER_USER: z.coerce.number().int().positive().default(10),
+  /** Per-connection inbound frame cap per window. */
+  WS_RATE_MAX: z.coerce.number().int().positive().default(120),
+  /** Rate-limit window in milliseconds. */
+  WS_RATE_WINDOW_MS: z.coerce.number().int().positive().default(1000),
 })
 
 export type Config = z.infer<typeof ConfigSchema>

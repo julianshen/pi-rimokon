@@ -5,6 +5,7 @@ import type { Broker, ClosableSocket } from '../broker/registry.ts'
 import { agentSessions, agentTokens } from '../db/repositories.ts'
 import { parseFrame } from './framing.ts'
 import { type AgentAvailability, validateHello } from './handshake.ts'
+import { createRateLimiter } from './rateLimiter.ts'
 
 const SERVER_NAME = 'pi-remote/0.1.0'
 
@@ -21,6 +22,11 @@ export interface AgentConnOptions {
   headerToken?: string
   handshakeMs?: number
   heartbeatMs?: number
+  /** Max concurrent sessions per user (spec §7); 0/undefined = unlimited. */
+  maxSessionsPerUser?: number
+  /** Per-connection inbound frame cap per window (spec §7). */
+  rateMax?: number
+  rateWindowMs?: number
 }
 
 /**
@@ -45,6 +51,7 @@ export function handleAgentConnection(
   let lastSeq = 0
   let lastPong = Date.now()
   let heartbeat: ReturnType<typeof setInterval> | undefined
+  const limiter = createRateLimiter(opts.rateMax ?? 120, opts.rateWindowMs ?? 1000)
 
   // A socket may open before it has authenticated (header- or hello-token);
   // close it if a valid handshake doesn't complete in time (spec §4.1 → 4408).
@@ -68,6 +75,10 @@ export function handleAgentConnection(
   })
 
   socket.on('message', (data, isBinary) => {
+    if (!limiter.allow()) {
+      socket.close(CLOSE_CODES.POLICY_VIOLATION) // 1008: too many frames
+      return
+    }
     const res = parseFrame(typeof data === 'string' ? data : String(data), isBinary)
     if (!res.ok) {
       socket.close(res.code)
@@ -143,6 +154,13 @@ export function handleAgentConnection(
       const familyId = String(payload.family_id)
       if (!(await agentTokens.isActive(ctx.db, jti))) {
         socket.close(CLOSE_CODES.FORBIDDEN) // revoked → 4403
+        return
+      }
+      // Per-user session cap (spec §7).
+      const cap = opts.maxSessionsPerUser ?? 0
+      if (cap > 0 && broker.listAgentsByUser(userId).length >= cap) {
+        socket.send(JSON.stringify({ type: 'error', code: 'too_many_sessions' }))
+        socket.close(CLOSE_CODES.TRY_LATER) // 1013
         return
       }
 

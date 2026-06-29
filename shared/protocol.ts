@@ -23,10 +23,16 @@ export const WS_SUBPROTOCOL = 'pi.rpc.v1' as const
 /** Max bytes per WebSocket text frame; oversized → {@link CLOSE_CODES.TOO_LARGE} (spec §4.2). */
 export const MAX_FRAME_BYTES = 1024 * 1024 // 1 MiB
 
-/** WebSocket close codes (spec §4.4). */
+/** WebSocket close codes (spec §4.4, plus standard 1001/1008/1013 for §7/§8.1). */
 export const CLOSE_CODES = {
   /** normal closure */
   NORMAL: 1000,
+  /** server going away — graceful shutdown / restart (client should reconnect) */
+  GOING_AWAY: 1001,
+  /** policy violation — e.g. per-connection rate limit exceeded */
+  POLICY_VIOLATION: 1008,
+  /** try again later — server at capacity (max sessions/clients per user) */
+  TRY_LATER: 1013,
   /** protocol error / bad frame / unsupported version */
   PROTOCOL_ERROR: 4400,
   /** missing / invalid / expired token */

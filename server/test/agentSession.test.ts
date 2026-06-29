@@ -151,6 +151,38 @@ describe('/agent handshake', () => {
   })
 })
 
+describe('/agent hardening (spec §7)', () => {
+  it('rejects a connection over the per-user session cap with 1013', async () => {
+    const { token } = await issueAgentAccess(h)
+    // Pre-fill one session for the user so the cap of 1 is already reached.
+    hub.registerAgent({
+      sessionId: 'pre',
+      userId: TEST_USER,
+      jti: 'x',
+      familyId: 'y',
+      socket: { close: () => {}, send: () => {} },
+      availability: { acceptTask: false },
+      state: 'idle',
+    })
+    const socket = new FakeSocket()
+    handleAgentConnection(h.ctx, hub, socket, { headerToken: token, maxSessionsPerUser: 1 })
+    socket.deliver(HELLO)
+    await flush()
+    expect(socket.lastClose).toBe(CLOSE_CODES.TRY_LATER)
+    expect(socket.frames().at(-1)).toMatchObject({ type: 'error', code: 'too_many_sessions' })
+  })
+
+  it('closes with 1008 when the inbound frame rate is exceeded', async () => {
+    const { token } = await issueAgentAccess(h)
+    const socket = new FakeSocket()
+    handleAgentConnection(h.ctx, hub, socket, { headerToken: token, rateMax: 1, rateWindowMs: 10_000 })
+    socket.deliver(HELLO) // 1st frame: allowed
+    await flush()
+    socket.deliver({ type: 'tool_update' }) // 2nd frame: over the cap
+    expect(socket.lastClose).toBe(CLOSE_CODES.POLICY_VIOLATION)
+  })
+})
+
 describe('/agent session lifecycle', () => {
   it('tracks the event seq high-water mark and ends the session on close', async () => {
     const { token } = await issueAgentAccess(h)

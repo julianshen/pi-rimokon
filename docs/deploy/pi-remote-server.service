@@ -1,0 +1,34 @@
+# systemd unit for the Pi Remote Server (spec §8.1).
+# Install: sudo cp pi-remote-server.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now pi-remote-server
+#
+# Secrets live in the EnvironmentFile (root-owned, chmod 600) — never in the repo.
+# On stop, systemd sends SIGTERM; the server drains sockets (advising reconnect)
+# and exits within ~5s (see src/index.ts shutdown()).
+
+[Unit]
+Description=Pi Remote Server (/agent + /client WebSocket broker)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/pi-remote/server
+# Adjust to your Node/tsx install (e.g. an absolute path or `npm start`).
+ExecStart=/usr/bin/npm start
+EnvironmentFile=/etc/pi-remote/server.env
+Restart=on-failure
+RestartSec=2
+# Graceful drain: give shutdown() time to advise reconnect + close sockets.
+KillSignal=SIGTERM
+TimeoutStopSec=10
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pi-remote
+
+[Install]
+WantedBy=multi-user.target
