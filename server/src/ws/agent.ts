@@ -39,6 +39,7 @@ export function handleAgentConnection(
   const heartbeatMs = opts.heartbeatMs ?? 30000
 
   let authed = false
+  let handshaking = false
   let sessionId: string | undefined
   let lastSeq = 0
   let lastPong = Date.now()
@@ -76,86 +77,98 @@ export function handleAgentConnection(
       if (typeof seq === 'number' && seq > lastSeq) lastSeq = seq
       return
     }
+    // Only one handshake runs per connection; frames arriving while it is
+    // in-flight are dropped (a well-behaved agent waits for `ready`).
+    if (handshaking) return
+    handshaking = true
     void completeHandshake(res.frame)
   })
 
   async function completeHandshake(frame: Record<string, unknown>): Promise<void> {
-    const type = frame.type
-    if (type !== 'hello' && type !== 'resume') {
-      socket.close(CLOSE_CODES.PROTOCOL_ERROR)
-      return
-    }
-
-    let availability: AgentAvailability = { acceptTask: false }
-    if (type === 'hello') {
-      const hello = validateHello(frame)
-      if (!hello.ok) {
-        if (hello.reason === 'bad_protocol') {
-          socket.send(
-            JSON.stringify({
-              type: 'response',
-              command: 'hello',
-              id: frame.id,
-              success: false,
-              error: 'unsupported protocol version',
-            }),
-          )
-        }
+    try {
+      const type = frame.type
+      if (type !== 'hello' && type !== 'resume') {
         socket.close(CLOSE_CODES.PROTOCOL_ERROR)
         return
       }
-      availability = hello.availability
-    }
 
-    const token = opts.headerToken ?? (typeof frame.token === 'string' ? frame.token : undefined)
-    if (!token) {
-      socket.close(CLOSE_CODES.UNAUTHORIZED)
-      return
-    }
-    let payload
-    try {
-      payload = await verifyAgentToken(ctx.keys, token, { issuer: ctx.issuer })
-    } catch {
-      socket.close(CLOSE_CODES.UNAUTHORIZED)
-      return
-    }
-    const jti = String(payload.jti)
-    const userId = String(payload.sub)
-    const familyId = String(payload.family_id)
-    if (!(await agentTokens.isActive(ctx.db, jti))) {
-      socket.close(CLOSE_CODES.FORBIDDEN) // revoked → 4403
-      return
-    }
+      let availability: AgentAvailability = { acceptTask: false }
+      if (type === 'hello') {
+        const hello = validateHello(frame)
+        if (!hello.ok) {
+          if (hello.reason === 'bad_protocol') {
+            socket.send(
+              JSON.stringify({
+                type: 'response',
+                command: 'hello',
+                id: frame.id,
+                success: false,
+                error: 'unsupported protocol version',
+              }),
+            )
+          }
+          socket.close(CLOSE_CODES.PROTOCOL_ERROR)
+          return
+        }
+        availability = hello.availability
+      }
 
-    sessionId = newId('ses')
-    await agentSessions.start(ctx.db, { sessionId, userId, jti, repo: availability.repo })
-    authed = true
-    clearTimeout(handshakeTimer)
-    hub.register({ sessionId, userId, jti, familyId, socket, availability })
-
-    socket.send(
-      JSON.stringify({
-        type: 'response',
-        command: type,
-        id: frame.id,
-        success: true,
-        data: {
-          session_id: sessionId,
-          user_id: userId,
-          server: SERVER_NAME,
-          heartbeat_sec: Math.round(heartbeatMs / 1000),
-        },
-      }),
-    )
-    socket.send(JSON.stringify({ type: 'ready', session_id: sessionId }))
-
-    lastPong = Date.now()
-    heartbeat = setInterval(() => {
-      if (Date.now() - lastPong > heartbeatMs * 2) {
-        socket.close(CLOSE_CODES.TIMEOUT) // missed pongs → 4408
+      const token = opts.headerToken ?? (typeof frame.token === 'string' ? frame.token : undefined)
+      if (!token) {
+        socket.close(CLOSE_CODES.UNAUTHORIZED)
         return
       }
-      socket.ping()
-    }, heartbeatMs)
+      let payload
+      try {
+        payload = await verifyAgentToken(ctx.keys, token, { issuer: ctx.issuer })
+      } catch {
+        socket.close(CLOSE_CODES.UNAUTHORIZED)
+        return
+      }
+      const jti = String(payload.jti)
+      const userId = String(payload.sub)
+      const familyId = String(payload.family_id)
+      if (!(await agentTokens.isActive(ctx.db, jti))) {
+        socket.close(CLOSE_CODES.FORBIDDEN) // revoked → 4403
+        return
+      }
+
+      sessionId = newId('ses')
+      await agentSessions.start(ctx.db, { sessionId, userId, jti, repo: availability.repo })
+      authed = true
+      clearTimeout(handshakeTimer)
+      hub.register({ sessionId, userId, jti, familyId, socket, availability })
+
+      socket.send(
+        JSON.stringify({
+          type: 'response',
+          command: type,
+          id: frame.id,
+          success: true,
+          data: {
+            session_id: sessionId,
+            user_id: userId,
+            server: SERVER_NAME,
+            heartbeat_sec: Math.round(heartbeatMs / 1000),
+          },
+        }),
+      )
+      socket.send(JSON.stringify({ type: 'ready', session_id: sessionId }))
+
+      lastPong = Date.now()
+      heartbeat = setInterval(() => {
+        if (Date.now() - lastPong > heartbeatMs * 2) {
+          socket.close(CLOSE_CODES.TIMEOUT) // missed pongs → 4408
+          return
+        }
+        socket.ping()
+      }, heartbeatMs)
+    } catch {
+      // Unexpected (e.g. DB) failure during the handshake — don't leak an
+      // unhandled rejection; tear the socket down with 1011.
+      socket.close(CLOSE_CODES.INTERNAL)
+    } finally {
+      handshaking = false
+    }
   }
 }

@@ -43,13 +43,10 @@ export class SessionHub {
 
   /** Close every live socket in a revoked token family (spec §3.2 → 4403). */
   closeFamily(familyId: string, code: number): number {
-    let closed = 0
-    for (const session of this.byId.values()) {
-      if (session.familyId === familyId) {
-        session.socket.close(code)
-        closed += 1
-      }
-    }
-    return closed
+    // Snapshot first: close() can synchronously fire the socket's close
+    // handler, which calls unregister() and would mutate the map mid-iteration.
+    const targets = [...this.byId.values()].filter((s) => s.familyId === familyId)
+    for (const session of targets) session.socket.close(code)
+    return targets.length
   }
 }

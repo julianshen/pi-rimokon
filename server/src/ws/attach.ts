@@ -50,10 +50,10 @@ export function attachAgentServer(
       socket.destroy()
       return
     }
-    if (pathname !== '/agent') {
-      socket.destroy()
-      return
-    }
+    // Only claim `/agent`; leave other paths for sibling upgrade listeners
+    // (the `/client` broker lands in M3, which also owns the unmatched-path
+    // fallback so we don't destroy a socket another listener wants).
+    if (pathname !== '/agent') return
     wss.handleUpgrade(req, socket, head, (ws) => {
       handleAgentConnection(ctx, hub, wrap(ws), {
         headerToken: bearerFromHeader(req.headers.authorization),

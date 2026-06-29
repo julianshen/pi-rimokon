@@ -116,6 +116,29 @@ describe('/agent handshake', () => {
     expect(socket.lastClose).toBe(CLOSE_CODES.TIMEOUT)
   })
 
+  it('ignores extra frames during an in-flight handshake (no double session)', async () => {
+    const { token } = await issueAgentAccess(h)
+    const socket = new FakeSocket()
+    connect(socket, { headerToken: token })
+    // two hellos delivered synchronously, before the first handshake settles
+    socket.deliver(HELLO)
+    socket.deliver({ ...HELLO, id: 'h2' })
+    await flush()
+    expect(hub.listByUser(TEST_USER)).toHaveLength(1)
+    expect(socket.lastClose).toBeUndefined()
+  })
+
+  it('closes with 1011 when the handshake hits an unexpected error', async () => {
+    const { token } = await issueAgentAccess(h)
+    // Break the DB so agentTokens.isActive throws after the token verifies.
+    const brokenCtx = { ...h.ctx, db: { query: () => Promise.reject(new Error('boom')) } }
+    const socket = new FakeSocket()
+    handleAgentConnection(brokenCtx, hub, socket, { headerToken: token, handshakeMs: 1000 })
+    socket.deliver(HELLO)
+    await flush()
+    expect(socket.lastClose).toBe(CLOSE_CODES.INTERNAL)
+  })
+
   it('rebinds a resume to a fresh session (v1: no replay)', async () => {
     const { token } = await issueAgentAccess(h)
     const socket = new FakeSocket()

@@ -10,7 +10,9 @@ export type FrameResult = { ok: true; frame: Frame } | { ok: false; code: number
  */
 export function parseFrame(data: string, isBinary: boolean): FrameResult {
   if (isBinary) return { ok: false, code: CLOSE_CODES.PROTOCOL_ERROR } // 4400: binary reserved
-  if (Buffer.byteLength(data, 'utf8') > MAX_FRAME_BYTES) {
+  // UTF-8 byte length is always ≥ the UTF-16 .length, so the cheap check
+  // short-circuits huge inputs before the O(n) byteLength allocation.
+  if (data.length > MAX_FRAME_BYTES || Buffer.byteLength(data, 'utf8') > MAX_FRAME_BYTES) {
     return { ok: false, code: CLOSE_CODES.TOO_LARGE } // 4413
   }
   let parsed: unknown
