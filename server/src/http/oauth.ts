@@ -36,22 +36,7 @@ export function oauthRouter(ctx: AuthContext): Router {
   const router = Router()
   const form = express.urlencoded({ extended: false })
 
-  // The SPA approval page is a different origin from the server (spec §7/§8.1),
-  // and its JSON+Authorization request triggers a CORS preflight.
-  if (ctx.allowedOrigin) {
-    const origin = ctx.allowedOrigin
-    router.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', origin)
-      res.header('Vary', 'Origin')
-      res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-      res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      if (req.method === 'OPTIONS') {
-        res.sendStatus(204)
-        return
-      }
-      next()
-    })
-  }
+  // CORS for the browser-called endpoints here is applied app-wide in app.ts.
 
   router.get('/.well-known/jwks.json', (_req, res) => {
     res.status(200).json(jwks(ctx.keys))

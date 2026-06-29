@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CLOSE_CODES, MAX_FRAME_BYTES } from '../../shared/protocol.ts'
 import { agentTokens, agentSessions } from '../src/db/repositories.ts'
-import { SessionHub } from '../src/broker/registry.ts'
+import { Broker } from '../src/broker/registry.ts'
 import { handleAgentConnection } from '../src/ws/agent.ts'
 import { FakeSocket, flush } from './fakeSocket.ts'
 import { issueAgentAccess, makeHarness, TEST_USER } from './helpers.ts'
 
 let h: Awaited<ReturnType<typeof makeHarness>>
-let hub: SessionHub
+let hub: Broker
 
 beforeEach(async () => {
   h = await makeHarness()
-  hub = new SessionHub()
+  hub = new Broker()
 })
 
 const HELLO = { type: 'hello', id: 'h1', protocol: 'pi.rpc/1', accept_task: true, agent: { repo: 'acme/web' } }
@@ -33,8 +33,8 @@ describe('/agent handshake', () => {
     expect(ready).toMatchObject({ type: 'ready' })
     const sessionId = (resp.data as { session_id: string }).session_id
 
-    expect(hub.get(sessionId)?.userId).toBe(TEST_USER)
-    expect(hub.get(sessionId)?.availability.acceptTask).toBe(true)
+    expect(hub.getAgent(sessionId)?.userId).toBe(TEST_USER)
+    expect(hub.getAgent(sessionId)?.availability.acceptTask).toBe(true)
     const row = await agentSessions.findById(h.ctx.db, sessionId)
     expect(row).toMatchObject({ user_id: TEST_USER, jti, repo: 'acme/web', status: 'started' })
   })
@@ -124,7 +124,7 @@ describe('/agent handshake', () => {
     socket.deliver(HELLO)
     socket.deliver({ ...HELLO, id: 'h2' })
     await flush()
-    expect(hub.listByUser(TEST_USER)).toHaveLength(1)
+    expect(hub.listAgentsByUser(TEST_USER)).toHaveLength(1)
     expect(socket.lastClose).toBeUndefined()
   })
 
@@ -167,7 +167,7 @@ describe('/agent session lifecycle', () => {
     socket.close(CLOSE_CODES.NORMAL)
     await flush()
 
-    expect(hub.get(sessionId)).toBeUndefined()
+    expect(hub.getAgent(sessionId)).toBeUndefined()
     const row = await agentSessions.findById(h.ctx.db, sessionId)
     expect(row).toMatchObject({ status: 'ended', last_seq: 2 })
     expect(row?.ended_at).toBeTruthy()
@@ -193,13 +193,13 @@ describe('/agent session lifecycle', () => {
     socket.close(CLOSE_CODES.NORMAL) // peer disconnects before it settles
     await flush()
 
-    expect(hub.listByUser(TEST_USER)).toHaveLength(0)
+    expect(hub.listAgentsByUser(TEST_USER)).toHaveLength(0)
     expect(socket.frames().some((f) => f.type === 'ready')).toBe(false)
     expect(socket.pings).toBe(0) // no leaked heartbeat
   })
 
   it('closes with 4403 when the family is revoked mid-handshake (re-check)', async () => {
-    const { token, jti } = await issueAgentAccess(h)
+    const { token } = await issueAgentAccess(h)
     // isActive: active on the pre-register check, revoked on the post-register
     // re-check — simulating a revoke that lands during the handshake await.
     let activeChecks = 0
@@ -219,7 +219,7 @@ describe('/agent session lifecycle', () => {
     await flush()
     expect(activeChecks).toBe(2)
     expect(socket.lastClose).toBe(CLOSE_CODES.FORBIDDEN)
-    expect(hub.get(jti)).toBeUndefined()
+    expect(hub.listAgentsByUser(TEST_USER)).toHaveLength(0) // not left registered
   })
 
   it('tears down a live socket when its token family is revoked (4403)', async () => {

@@ -8,6 +8,7 @@ export interface AuthTtl {
   pollIntervalSec: number
   accessSec: number
   refreshSec: number
+  ticketSec: number
 }
 
 export const DEFAULT_TTL: AuthTtl = {
@@ -15,6 +16,7 @@ export const DEFAULT_TTL: AuthTtl = {
   pollIntervalSec: 5, // spec §3.1 interval
   accessSec: 3600, // ~1h (spec §3.2)
   refreshSec: 60 * 60 * 24 * 30, // 30 days
+  ticketSec: 30, // single-use /client ticket (spec §5.1)
 }
 
 /**

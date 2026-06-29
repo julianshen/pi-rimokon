@@ -14,8 +14,15 @@ endpoints and RFC 8628 device-flow auth described in
   `hello.token` fallback), `hello`/`ready` handshake with protocol negotiation +
   availability (`accept_task`), framing guards, ping/pong heartbeat, session
   lifecycle, and revocation tear-down (4403). A fake-agent harness drives it.
+- **M3** — the `/client` WebSocket + broker: `POST /client/ticket` (single-use,
+  Supabase-authenticated), ticket-authed `/client` upgrade with an Origin
+  allow-list, app-wide CORS, the per-user broker (ownership-checked web→agent
+  forwarding with broker-unique id rewrite/restore, agent→web response routing,
+  event fan-out by `session_id`+`seq`), presence (`sessions`/`session_online`/
+  `session_offline`/`agent_state`), and `start_session` → idle-agent selection
+  (§5.4, with `no_available_agent`).
 
-Next: `/client` + broker (M3), frontend integration (M4), deployment (M5).
+Next: frontend integration (M4), deployment (M5).
 
 ### Fake agent (manual testing)
 

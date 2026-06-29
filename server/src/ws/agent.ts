@@ -1,7 +1,7 @@
 import { CLOSE_CODES } from '../../../shared/protocol.ts'
 import type { AuthContext } from '../auth/context.ts'
 import { newId, verifyAgentToken } from '../auth/tokens.ts'
-import type { ClosableSocket, SessionHub } from '../broker/registry.ts'
+import type { Broker, ClosableSocket } from '../broker/registry.ts'
 import { agentSessions, agentTokens } from '../db/repositories.ts'
 import { parseFrame } from './framing.ts'
 import { type AgentAvailability, validateHello } from './handshake.ts'
@@ -31,7 +31,7 @@ export interface AgentConnOptions {
  */
 export function handleAgentConnection(
   ctx: AuthContext,
-  hub: SessionHub,
+  broker: Broker,
   socket: AgentSocket,
   opts: AgentConnOptions = {},
 ): void {
@@ -57,7 +57,7 @@ export function handleAgentConnection(
     clearTimeout(handshakeTimer)
     if (heartbeat) clearInterval(heartbeat)
     if (sessionId) {
-      hub.unregister(sessionId)
+      broker.unregisterAgent(sessionId)
       void agentSessions.end(ctx.db, sessionId, lastSeq, new Date(ctx.now() * 1000)).catch(() => {})
     }
   }
@@ -74,10 +74,20 @@ export function handleAgentConnection(
       return
     }
     if (authed) {
+      const frame = res.frame
+      if (frame.type === 'response') {
+        // Correlated by id — hand to the broker to route back to the client.
+        broker.routeFromAgent(sessionId as string, frame)
+        return
+      }
       // The base Pi RPC protocol carries no seq; the server stamps a
-      // per-session monotonic seq on each inbound *event* (responses are
-      // correlated by id, not sequenced). M3 attaches it to the fan-out frame.
-      if (res.frame.type !== 'response') lastSeq += 1
+      // per-session monotonic seq on each inbound event before fan-out.
+      lastSeq += 1
+      frame.seq = lastSeq
+      if (frame.type === 'state' && typeof frame.state === 'string') {
+        broker.setAgentState(sessionId as string, frame.state)
+      }
+      broker.routeFromAgent(sessionId as string, frame)
       return
     }
     // Only one handshake runs per connection; frames arriving while it is
@@ -147,7 +157,15 @@ export function handleAgentConnection(
       }
       authed = true
       clearTimeout(handshakeTimer)
-      hub.register({ sessionId, userId, jti, familyId, socket, availability })
+      broker.registerAgent({
+        sessionId,
+        userId,
+        jti,
+        familyId,
+        socket,
+        availability,
+        state: availability.state ?? 'idle',
+      })
 
       // Re-check after registering: if the family was revoked during the
       // handshake's await window, closeFamily ran before this socket was in the
