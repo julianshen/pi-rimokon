@@ -1,9 +1,11 @@
 import express, { type Express } from 'express'
 import type { AuthContext } from './auth/context.ts'
+import type { Broker } from './broker/registry.ts'
 import type { TicketStore } from './broker/tickets.ts'
 import { agentsRouter } from './http/agents.ts'
 import { clientRouter } from './http/client.ts'
 import { healthRouter } from './http/health.ts'
+import { metricsRouter } from './http/metrics.ts'
 import { oauthRouter } from './http/oauth.ts'
 
 /**
@@ -12,7 +14,7 @@ import { oauthRouter } from './http/oauth.ts'
  * is provided the device-flow + JWKS + ticket routes are mounted; the WebSocket
  * upgrade handlers attach onto the same server in index.ts.
  */
-export function createApp(ctx?: AuthContext, tickets?: TicketStore): Express {
+export function createApp(ctx?: AuthContext, tickets?: TicketStore, broker?: Broker): Express {
   const app = express()
   app.disable('x-powered-by')
 
@@ -36,6 +38,7 @@ export function createApp(ctx?: AuthContext, tickets?: TicketStore): Express {
 
   app.use(express.json())
   app.use(healthRouter())
+  if (broker) app.use(metricsRouter(broker))
   if (ctx) {
     app.use(oauthRouter(ctx))
     app.use(agentsRouter(ctx))

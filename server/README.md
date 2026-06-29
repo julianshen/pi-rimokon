@@ -25,8 +25,12 @@ endpoints and RFC 8628 device-flow auth described in
 - **M4 (server side)** — `GET /agent/tokens` + `POST /agent/tokens/revoke`
   (Supabase-authenticated) backing the SPA's Settings → Agents view. The
   frontend `WebSocketPiService`, `/device` route, and Agents UI live in the SPA.
+- **M5** — hardening + deployment: per-connection frame rate limit (→1008),
+  max sessions/clients per user (→1013), graceful shutdown that drains sockets
+  with a `reconnect_hint` (→1001), and `GET /metrics`. Cloudflare Tunnel +
+  systemd + runbook in [`docs/deploy/`](../docs/deploy/runbook.md).
 
-Next: deployment + hardening (M5).
+All milestones complete.
 
 ### Fake agent (manual testing)
 

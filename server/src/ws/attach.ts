@@ -5,7 +5,7 @@ import type { AuthContext } from '../auth/context.ts'
 import type { Broker } from '../broker/registry.ts'
 import type { TicketStore } from '../broker/tickets.ts'
 import { type AgentConnOptions, type AgentSocket, handleAgentConnection } from './agent.ts'
-import { handleClientConnection } from './client.ts'
+import { type ClientConnOptions, handleClientConnection } from './client.ts'
 
 function bearerFromHeader(header?: string): string | undefined {
   return /^Bearer\s+(.+)$/i.exec((header ?? '').trim())?.[1]?.trim()
@@ -32,7 +32,7 @@ function wrap(ws: WebSocket): AgentSocket {
   }
 }
 
-interface AttachOptions extends AgentConnOptions {
+interface AttachOptions extends AgentConnOptions, ClientConnOptions {
   ticketStore: TicketStore
 }
 
@@ -67,6 +67,9 @@ export function attachWebSockets(
           headerToken: bearerFromHeader(req.headers.authorization),
           handshakeMs: opts.handshakeMs,
           heartbeatMs: opts.heartbeatMs,
+          maxSessionsPerUser: opts.maxSessionsPerUser,
+          rateMax: opts.rateMax,
+          rateWindowMs: opts.rateWindowMs,
         })
       })
       return
@@ -89,7 +92,11 @@ export function attachWebSockets(
         return
       }
       wss.handleUpgrade(req, socket, head, (ws) => {
-        handleClientConnection(broker, wrap(ws), { userId })
+        handleClientConnection(broker, wrap(ws), { userId }, {
+          maxClientsPerUser: opts.maxClientsPerUser,
+          rateMax: opts.rateMax,
+          rateWindowMs: opts.rateWindowMs,
+        })
       })
       return
     }

@@ -34,9 +34,27 @@ const ctx: AuthContext = {
 }
 
 const tickets = new TicketStore(now, DEFAULT_TTL.ticketSec)
-const server = createServer(createApp(ctx, tickets))
-attachWebSockets(server, ctx, broker, { ticketStore: tickets })
+const server = createServer(createApp(ctx, tickets, broker))
+attachWebSockets(server, ctx, broker, {
+  ticketStore: tickets,
+  maxSessionsPerUser: config.MAX_SESSIONS_PER_USER,
+  maxClientsPerUser: config.MAX_CLIENTS_PER_USER,
+  rateMax: config.WS_RATE_MAX,
+  rateWindowMs: config.WS_RATE_WINDOW_MS,
+})
 server.listen(config.PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[pi-remote-server] listening on :${config.PORT}`)
 })
+
+// Graceful shutdown (spec §8.1): advise reconnect, drain sockets, then exit.
+// Both the SPA and agents auto-reconnect, so a restart is a brief blip.
+function shutdown(signal: string): void {
+  // eslint-disable-next-line no-console
+  console.log(`[pi-remote-server] ${signal} — draining sockets`)
+  broker.closeAll(CLOSE_CODES.GOING_AWAY)
+  server.close(() => process.exit(0))
+  setTimeout(() => process.exit(0), 5000).unref() // hard cap if drain stalls
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))

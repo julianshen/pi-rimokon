@@ -251,6 +251,25 @@ describe('client handler (ws/client.ts)', () => {
     expect(cs.lastClose).toBe(CLOSE_CODES.INTERNAL)
   })
 
+  it('rejects a client over the per-user cap with 1013', () => {
+    const broker = new Broker()
+    broker.registerClient({ clientId: 'pre', userId: 'u1', socket: sock() })
+    const cs = new FakeSocket()
+    const id = handleClientConnection(broker, cs, { userId: 'u1' }, { maxClientsPerUser: 1 })
+    expect(id).toBeUndefined()
+    expect(cs.lastClose).toBe(CLOSE_CODES.TRY_LATER)
+  })
+
+  it('closes with 1008 when the client frame rate is exceeded', () => {
+    const broker = new Broker()
+    mkAgent(broker, { sessionId: 's1', userId: 'u1' })
+    const cs = new FakeSocket()
+    handleClientConnection(broker, cs, { userId: 'u1' }, { rateMax: 1, rateWindowMs: 10_000 })
+    cs.deliver({ type: 'steer', id: 'c1', session_id: 's1' }) // allowed
+    cs.deliver({ type: 'steer', id: 'c2', session_id: 's1' }) // over cap
+    expect(cs.lastClose).toBe(CLOSE_CODES.POLICY_VIOLATION)
+  })
+
   it('unregisters the client on close (no further delivery)', () => {
     const broker = new Broker()
     mkAgent(broker, { sessionId: 's1', userId: 'u1' })
@@ -260,6 +279,64 @@ describe('client handler (ws/client.ts)', () => {
     const before = cs.frames().length
     broker.routeFromAgent('s1', { type: 'tool_update' })
     expect(cs.frames().length).toBe(before) // unregistered → received nothing new
+  })
+})
+
+describe('Broker — stats & shutdown', () => {
+  it('reports live + cumulative stats', () => {
+    const broker = new Broker()
+    mkAgent(broker, { sessionId: 's1', userId: 'u1' })
+    mkClient(broker, 'u1')
+    broker.unregisterAgent('s1')
+    const stats = broker.stats()
+    expect(stats.agents_live).toBe(0)
+    expect(stats.clients_live).toBe(1)
+    expect(stats.agent_connections_total).toBe(1)
+    expect(stats.client_connections_total).toBe(1)
+  })
+
+  it('lists a user’s clients', () => {
+    const broker = new Broker()
+    mkClient(broker, 'u1')
+    mkClient(broker, 'u1')
+    mkClient(broker, 'u2')
+    expect(broker.listClientsByUser('u1')).toHaveLength(2)
+  })
+
+  it('closeAll advises reconnect and closes every socket (going-away)', () => {
+    const broker = new Broker()
+    const agent = mkAgent(broker, { sessionId: 's1', userId: 'u1' })
+    const client = mkClient(broker, 'u1')
+    broker.closeAll(1001)
+    expect(agent.closes).toEqual([1001])
+    expect(client.socket.closes).toEqual([1001])
+    expect(agent.sent.at(-1)).toMatchObject({ type: 'reconnect_hint' })
+    expect(client.socket.sent.at(-1)).toMatchObject({ type: 'reconnect_hint' })
+  })
+
+  it('closeAll keeps draining when a socket throws', () => {
+    const broker = new Broker()
+    const closed: string[] = []
+    const bad = {
+      send: () => {
+        throw new Error('broken')
+      },
+      close: () => {
+        throw new Error('broken')
+      },
+    }
+    const good = { send: () => {}, close: () => closed.push('good') }
+    broker.registerAgent({ sessionId: 's1', userId: 'u1', jti: 'j', familyId: 'f', socket: bad, availability: { acceptTask: false }, state: 'idle' })
+    broker.registerAgent({ sessionId: 's2', userId: 'u1', jti: 'j2', familyId: 'f2', socket: good, availability: { acceptTask: false }, state: 'idle' })
+    expect(() => broker.closeAll(1001)).not.toThrow()
+    expect(closed).toEqual(['good']) // the good socket still got closed
+  })
+
+  it('counts routing errors', () => {
+    const broker = new Broker()
+    const client = mkClient(broker, 'u1')
+    broker.forwardFromClient(client.id, { type: 'steer', id: 'c1', session_id: 'ghost' })
+    expect(broker.stats().routing_errors_total).toBe(1)
   })
 })
 

@@ -43,11 +43,14 @@ export class Broker {
   private readonly clients = new Map<string, WebClientConn>()
   /** broker-unique command id → originating client + its client-local id. */
   private readonly pending = new Map<string, Pending>()
+  /** Cumulative counters for /metrics (spec §7 observability). */
+  private readonly counters = { agentConnections: 0, clientConnections: 0, routingErrors: 0 }
 
   // --- agent side (driven by the /agent handler + revocation) -------------
 
   registerAgent(session: AgentSession): void {
     this.agents.set(session.sessionId, session)
+    this.counters.agentConnections += 1
     this.toUserClients(session.userId, { type: 'session_online', ...this.descriptor(session) })
   }
 
@@ -112,7 +115,46 @@ export class Broker {
 
   registerClient(client: WebClientConn): void {
     this.clients.set(client.clientId, client)
+    this.counters.clientConnections += 1
     client.socket.send(JSON.stringify(this.snapshot(client.userId)))
+  }
+
+  /** Live web clients owned by a user (for the max-clients cap, spec §7). */
+  listClientsByUser(userId: string): WebClientConn[] {
+    return [...this.clients.values()].filter((c) => c.userId === userId)
+  }
+
+  /** Live + cumulative counts for the /metrics endpoint (spec §7). */
+  stats(): Record<string, number> {
+    return {
+      agents_live: this.agents.size,
+      clients_live: this.clients.size,
+      agent_connections_total: this.counters.agentConnections,
+      client_connections_total: this.counters.clientConnections,
+      routing_errors_total: this.counters.routingErrors,
+    }
+  }
+
+  /**
+   * Close every live socket (graceful shutdown, spec §8.1). Sends a
+   * `reconnect_hint` first so well-behaved clients come back, then closes with
+   * `code` (1001 going-away). Both sides already auto-reconnect.
+   */
+  closeAll(code: number): void {
+    const all = [...this.agents.values(), ...this.clients.values()]
+    for (const conn of all) {
+      // A broken socket must not abort draining the rest.
+      try {
+        conn.socket.send(JSON.stringify({ type: 'reconnect_hint', reason: 'server_shutdown' }))
+      } catch {
+        /* ignore */
+      }
+      try {
+        conn.socket.close(code)
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   unregisterClient(clientId: string): void {
@@ -137,6 +179,7 @@ export class Broker {
     const agent = sessionId ? this.agents.get(sessionId) : undefined
     // Ownership check: the target must be one of the requester's own sessions.
     if (!agent || agent.userId !== client.userId) {
+      this.counters.routingErrors += 1
       client.socket.send(
         JSON.stringify({
           type: 'error',

@@ -1,0 +1,22 @@
+# Cloudflare Tunnel config for the Pi Remote Server (spec §8.1).
+# Place at ~/.cloudflared/config.yml on the host running the server.
+#
+# `cloudflared` opens an OUTBOUND connection to Cloudflare's edge — no inbound
+# ports, no firewall holes, no public IP. Cloudflare terminates TLS at the edge
+# and proxies the WebSocket Upgrade down the tunnel to the local server.
+#
+# Setup (once):
+#   cloudflared tunnel login
+#   cloudflared tunnel create pi-remote                          # prints <tunnel-id>, writes creds json
+#   cloudflared tunnel route dns pi-remote agents.jlnshen.com    # CNAME → <tunnel-id>.cfargotunnel.com
+#   cloudflared tunnel run pi-remote                             # or install the systemd unit below
+
+tunnel: pi-remote
+credentials-file: /home/pi/.cloudflared/<tunnel-id>.json
+
+ingress:
+  - hostname: agents.jlnshen.com
+    # cloudflared forwards the HTTP Upgrade; the Node server completes the WS
+    # handshake on /agent and /client and serves the HTTPS endpoints.
+    service: http://localhost:8787
+  - service: http_status:404
