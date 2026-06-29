@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import { MockPiService } from './services/MockPiService'
+import { useEffect, useMemo } from 'react'
+import { createPiService } from './services/createPiService'
+import { piAccessToken, piServerUrl } from './lib/piServer'
 import { useAppStore } from './hooks/useAppStore'
 import { Sidebar } from './components/Sidebar'
 import { MobileNavDrawer, MobileTopBar } from './components/MobileChrome'
@@ -12,9 +13,12 @@ import { WorkPanel } from './components/WorkPanel'
 import { SessionTree } from './components/SessionTree'
 
 export default function App() {
-  // The service is the seam to a real Pi RPC/SDK; swap MockPiService for a live
-  // transport and nothing else changes.
-  const service = useMemo(() => new MockPiService(), [])
+  // The service is the seam to the Pi Remote Server. With VITE_PI_SERVER_URL set
+  // it talks to the live /client socket; otherwise it falls back to the mock.
+  const service = useMemo(() => createPiService(piServerUrl, piAccessToken), [])
+  // Tear down the live socket when the app unmounts (e.g. on sign-out) so a
+  // stale connection isn't left registered under the previous user.
+  useEffect(() => () => (service as { dispose?: () => void }).dispose?.(), [service])
   const { state, patch, mobile, sessions, activeSession, actions } = useAppStore(service)
 
   return (

@@ -238,6 +238,14 @@ async function refreshGrant(ctx: AuthContext, refreshToken?: string): Promise<To
 }
 
 /**
+ * Revoke a token family by id (Settings → Agents). The caller must have already
+ * verified the family belongs to the requesting user.
+ */
+export async function revokeAgentFamily(ctx: AuthContext, familyId: string): Promise<void> {
+  await revokeFamily(ctx, familyId, secondsToDate(ctx.now()))
+}
+
+/**
  * `POST /oauth/revoke` (RFC 7009) — revoke a refresh token's family. Always
  * resolves; an unknown token is a no-op per the RFC.
  */

@@ -22,7 +22,11 @@ endpoints and RFC 8628 device-flow auth described in
   `session_offline`/`agent_state`), and `start_session` → idle-agent selection
   (§5.4, with `no_available_agent`).
 
-Next: frontend integration (M4), deployment (M5).
+- **M4 (server side)** — `GET /agent/tokens` + `POST /agent/tokens/revoke`
+  (Supabase-authenticated) backing the SPA's Settings → Agents view. The
+  frontend `WebSocketPiService`, `/device` route, and Agents UI live in the SPA.
+
+Next: deployment + hardening (M5).
 
 ### Fake agent (manual testing)
 

@@ -214,7 +214,7 @@ describe('useAuth — configured', () => {
     })
     expect(mock.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'github',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: window.location.href },
     })
   })
 

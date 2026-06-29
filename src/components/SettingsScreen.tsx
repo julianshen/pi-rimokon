@@ -1,6 +1,7 @@
 import type { RepoConnection } from '../lib/types'
 import { BranchIcon, LogoutIcon } from './icons'
 import { Avatar } from './Avatar'
+import { AgentsCard } from './AgentsCard'
 import { useAuth } from '../hooks/useAuth'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -91,6 +92,8 @@ export function SettingsScreen() {
             </div>
           ))}
         </div>
+
+        <AgentsCard />
       </div>
     </div>
   )

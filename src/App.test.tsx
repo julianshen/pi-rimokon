@@ -90,4 +90,16 @@ describe('App', () => {
 
     expect(screen.getByRole('textbox')).toBeInTheDocument()
   })
+
+  it('navigates to the Settings route from the sidebar', async () => {
+    setViewport(1280)
+    const user = userEvent.setup()
+    renderApp()
+    // Sidebar Settings entry → actions.goSettings → renders the Settings route
+    // (which also mounts the new Agents card).
+    const settings = screen.getAllByRole('button', { name: /settings/i })
+    await user.click(settings[0])
+    expect(screen.getByRole('heading', { name: /^settings$/i })).toBeInTheDocument()
+    expect(screen.getByText('Agent tokens')).toBeInTheDocument()
+  })
 })
