@@ -6,9 +6,10 @@ import { loadConfig } from './config.ts'
 import { type AuthContext, DEFAULT_TTL } from './auth/context.ts'
 import { loadSigningKeys } from './auth/keys.ts'
 import { createSupabaseVerifier } from './auth/supabaseJwt.ts'
-import { SessionHub } from './broker/registry.ts'
+import { Broker } from './broker/registry.ts'
+import { TicketStore } from './broker/tickets.ts'
 import { createPool } from './db/client.ts'
-import { attachAgentServer } from './ws/attach.ts'
+import { attachWebSockets } from './ws/attach.ts'
 
 /**
  * Server bootstrap. One `http.Server` hosts the Express routes and (from M2)
@@ -17,7 +18,8 @@ import { attachAgentServer } from './ws/attach.ts'
  */
 const config = loadConfig()
 const keys = await loadSigningKeys(config.AGENT_JWT_PRIVATE_KEY, config.AGENT_JWT_PUBLIC_KEY)
-const hub = new SessionHub()
+const broker = new Broker()
+const now = () => Math.floor(Date.now() / 1000)
 
 const ctx: AuthContext = {
   db: createPool(config.DATABASE_URL),
@@ -26,13 +28,14 @@ const ctx: AuthContext = {
   verificationUri: new URL('/device', config.ALLOWED_ORIGIN ?? config.JWT_ISSUER).toString(),
   allowedOrigin: config.ALLOWED_ORIGIN,
   verifySupabaseToken: createSupabaseVerifier(config.SUPABASE_URL),
-  now: () => Math.floor(Date.now() / 1000),
+  now,
   ttl: DEFAULT_TTL,
-  onFamilyRevoked: (familyId) => hub.closeFamily(familyId, CLOSE_CODES.FORBIDDEN),
+  onFamilyRevoked: (familyId) => broker.closeFamily(familyId, CLOSE_CODES.FORBIDDEN),
 }
 
-const server = createServer(createApp(ctx))
-attachAgentServer(server, ctx, hub)
+const tickets = new TicketStore(now, DEFAULT_TTL.ticketSec)
+const server = createServer(createApp(ctx, tickets))
+attachWebSockets(server, ctx, broker, { ticketStore: tickets })
 server.listen(config.PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[pi-remote-server] listening on :${config.PORT}`)

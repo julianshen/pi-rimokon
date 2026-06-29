@@ -2,9 +2,10 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
 import { WebSocket } from 'ws'
-import { SessionHub } from '../src/broker/registry.ts'
+import { Broker } from '../src/broker/registry.ts'
+import { TicketStore } from '../src/broker/tickets.ts'
 import { agentSessions } from '../src/db/repositories.ts'
-import { attachAgentServer } from '../src/ws/attach.ts'
+import { attachWebSockets } from '../src/ws/attach.ts'
 import { issueAgentAccess, makeHarness } from './helpers.ts'
 
 let server: Server | undefined
@@ -14,9 +15,10 @@ afterEach(async () => {
   server = undefined
 })
 
-async function boot(h: Awaited<ReturnType<typeof makeHarness>>, hub: SessionHub): Promise<string> {
+async function boot(h: Awaited<ReturnType<typeof makeHarness>>, broker: Broker): Promise<string> {
   server = createServer()
-  attachAgentServer(server, h.ctx, hub, { handshakeMs: 2000, heartbeatMs: 5000 })
+  const tickets = new TicketStore(() => h.clock.value, 30)
+  attachWebSockets(server, h.ctx, broker, { ticketStore: tickets, handshakeMs: 2000, heartbeatMs: 5000 })
   await new Promise<void>((resolve) => server!.listen(0, resolve))
   return `ws://127.0.0.1:${(server!.address() as AddressInfo).port}/agent`
 }
@@ -24,7 +26,7 @@ async function boot(h: Awaited<ReturnType<typeof makeHarness>>, hub: SessionHub)
 describe('/agent over a real WebSocket', () => {
   it('completes the upgrade + hello/ready handshake and records the session', async () => {
     const h = await makeHarness()
-    const hub = new SessionHub()
+    const hub = new Broker()
     const { token } = await issueAgentAccess(h)
     const url = await boot(h, hub)
 
@@ -51,7 +53,7 @@ describe('/agent over a real WebSocket', () => {
 
   it('closes the socket with 4401 for a bad token', async () => {
     const h = await makeHarness()
-    const url = await boot(h, new SessionHub())
+    const url = await boot(h, new Broker())
 
     const ws = new WebSocket(url, { headers: { Authorization: 'Bearer garbage' } })
     const code = await new Promise<number>((resolve, reject) => {

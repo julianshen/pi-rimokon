@@ -2,14 +2,19 @@ import type { Server } from 'node:http'
 import { type RawData, type WebSocket, WebSocketServer } from 'ws'
 import { WS_SUBPROTOCOL } from '../../../shared/protocol.ts'
 import type { AuthContext } from '../auth/context.ts'
-import type { SessionHub } from '../broker/registry.ts'
+import type { Broker } from '../broker/registry.ts'
+import type { TicketStore } from '../broker/tickets.ts'
 import { type AgentConnOptions, type AgentSocket, handleAgentConnection } from './agent.ts'
+import { handleClientConnection } from './client.ts'
 
 function bearerFromHeader(header?: string): string | undefined {
   return /^Bearer\s+(.+)$/i.exec((header ?? '').trim())?.[1]?.trim()
 }
 
-/** Adapt a `ws.WebSocket` to the minimal {@link AgentSocket} the handler uses. */
+/**
+ * Adapt a `ws.WebSocket` to {@link AgentSocket} (the superset of what both
+ * handlers need; the client handler simply ignores `ping`/`pong`).
+ */
 function wrap(ws: WebSocket): AgentSocket {
   return {
     send: (data: string) => ws.send(data),
@@ -27,15 +32,20 @@ function wrap(ws: WebSocket): AgentSocket {
   }
 }
 
+interface AttachOptions extends AgentConnOptions {
+  ticketStore: TicketStore
+}
+
 /**
- * Route the HTTP `upgrade` event for `/agent` to a WebSocket connection
- * (spec §4.1). Other paths are destroyed (the `/client` socket lands in M3).
+ * Route the HTTP `upgrade` event to the right WebSocket handler by path
+ * (spec §4.1 / §5.1): `/agent` (Bearer on the header) and `/client` (a
+ * single-use ticket on the query string, plus an Origin allow-list).
  */
-export function attachAgentServer(
+export function attachWebSockets(
   server: Server,
   ctx: AuthContext,
-  hub: SessionHub,
-  opts: AgentConnOptions = {},
+  broker: Broker,
+  opts: AttachOptions,
 ): WebSocketServer {
   const wss = new WebSocketServer({
     noServer: true,
@@ -43,23 +53,43 @@ export function attachAgentServer(
   })
 
   server.on('upgrade', (req, socket, head) => {
-    let pathname: string
+    let url: URL
     try {
-      pathname = new URL(req.url ?? '', 'http://localhost').pathname
+      url = new URL(req.url ?? '', 'http://localhost')
     } catch {
       socket.destroy()
       return
     }
-    // Only claim `/agent`; leave other paths for sibling upgrade listeners
-    // (the `/client` broker lands in M3, which also owns the unmatched-path
-    // fallback so we don't destroy a socket another listener wants).
-    if (pathname !== '/agent') return
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      handleAgentConnection(ctx, hub, wrap(ws), {
-        headerToken: bearerFromHeader(req.headers.authorization),
-        ...opts,
+
+    if (url.pathname === '/agent') {
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        handleAgentConnection(ctx, broker, wrap(ws), {
+          headerToken: bearerFromHeader(req.headers.authorization),
+          handshakeMs: opts.handshakeMs,
+          heartbeatMs: opts.heartbeatMs,
+        })
       })
-    })
+      return
+    }
+
+    if (url.pathname === '/client') {
+      // Browser origin allow-list (spec §7).
+      if (ctx.allowedOrigin && req.headers.origin && req.headers.origin !== ctx.allowedOrigin) {
+        socket.destroy()
+        return
+      }
+      const userId = opts.ticketStore.redeem(url.searchParams.get('ticket') ?? '')
+      if (!userId) {
+        socket.destroy() // unknown/expired/used ticket → reject the upgrade
+        return
+      }
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        handleClientConnection(broker, wrap(ws), { userId })
+      })
+      return
+    }
+
+    socket.destroy()
   })
 
   return wss
