@@ -9,7 +9,7 @@ function okFetch() {
 
 describe('DeviceApprovalScreen', () => {
   it('shows a configuration notice when no server is set', () => {
-    render(<DeviceApprovalScreen httpBase={undefined} />)
+    render(<DeviceApprovalScreen httpBase="" />) // explicit falsy, independent of env
     expect(screen.getByRole('alert')).toHaveTextContent(/isn’t configured/i)
   })
 

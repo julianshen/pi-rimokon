@@ -15,7 +15,7 @@ function listFetch(tokens = TOKENS) {
 
 describe('AgentsCard', () => {
   it('shows a notice when the server is not configured', () => {
-    render(<AgentsCard httpBase={undefined} />)
+    render(<AgentsCard httpBase="" />) // explicit falsy, independent of env
     expect(screen.getByText(/connect the agent server/i)).toBeInTheDocument()
   })
 
