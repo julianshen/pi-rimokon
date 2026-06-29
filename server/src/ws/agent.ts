@@ -173,6 +173,14 @@ export function handleAgentConnection(
         await agentSessions.end(ctx.db, sessionId, lastSeq, new Date(ctx.now() * 1000))
         return
       }
+      // Re-check the cap synchronously right before registering — the earlier
+      // check ran before an await, so concurrent connects could both pass it.
+      if (cap > 0 && broker.listAgentsByUser(userId).length >= cap) {
+        socket.send(JSON.stringify({ type: 'error', code: 'too_many_sessions' }))
+        socket.close(CLOSE_CODES.TRY_LATER)
+        await agentSessions.end(ctx.db, sessionId, lastSeq, new Date(ctx.now() * 1000))
+        return
+      }
       authed = true
       clearTimeout(handshakeTimer)
       broker.registerAgent({

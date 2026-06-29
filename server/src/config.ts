@@ -26,10 +26,10 @@ export const ConfigSchema = z.object({
   SUPABASE_URL: z.string().url(),
 
   // --- Limits / hardening (spec §7) ---
-  /** Max concurrent agent sessions per user. */
-  MAX_SESSIONS_PER_USER: z.coerce.number().int().positive().default(20),
-  /** Max concurrent web clients per user. */
-  MAX_CLIENTS_PER_USER: z.coerce.number().int().positive().default(10),
+  /** Max concurrent agent sessions per user; 0 = unlimited. */
+  MAX_SESSIONS_PER_USER: z.coerce.number().int().nonnegative().default(20),
+  /** Max concurrent web clients per user; 0 = unlimited. */
+  MAX_CLIENTS_PER_USER: z.coerce.number().int().nonnegative().default(10),
   /** Per-connection inbound frame cap per window. */
   WS_RATE_MAX: z.coerce.number().int().positive().default(120),
   /** Rate-limit window in milliseconds. */

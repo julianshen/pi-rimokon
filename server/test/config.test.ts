@@ -42,6 +42,12 @@ describe('loadConfig', () => {
     expect(() => loadConfig(rest as NodeJS.ProcessEnv)).toThrow(/AGENT_JWT_PRIVATE_KEY/)
   })
 
+  it('accepts 0 for the per-user caps (unlimited)', () => {
+    const config = loadConfig({ ...BASE, MAX_SESSIONS_PER_USER: '0', MAX_CLIENTS_PER_USER: '0' } as NodeJS.ProcessEnv)
+    expect(config.MAX_SESSIONS_PER_USER).toBe(0)
+    expect(config.MAX_CLIENTS_PER_USER).toBe(0)
+  })
+
   it('throws when PORT is out of range', () => {
     expect(() => loadConfig({ ...BASE, PORT: '70000' } as NodeJS.ProcessEnv)).toThrow(ConfigError)
   })

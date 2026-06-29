@@ -143,8 +143,17 @@ export class Broker {
   closeAll(code: number): void {
     const all = [...this.agents.values(), ...this.clients.values()]
     for (const conn of all) {
-      conn.socket.send(JSON.stringify({ type: 'reconnect_hint', reason: 'server_shutdown' }))
-      conn.socket.close(code)
+      // A broken socket must not abort draining the rest.
+      try {
+        conn.socket.send(JSON.stringify({ type: 'reconnect_hint', reason: 'server_shutdown' }))
+      } catch {
+        /* ignore */
+      }
+      try {
+        conn.socket.close(code)
+      } catch {
+        /* ignore */
+      }
     }
   }
 

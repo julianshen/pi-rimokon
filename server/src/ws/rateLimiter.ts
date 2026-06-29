@@ -10,7 +10,8 @@ export interface RateLimiter {
 export function createRateLimiter(
   maxPerWindow: number,
   windowMs: number,
-  now: () => number = () => Date.now(),
+  // Monotonic clock by default — immune to wall-clock (NTP) adjustments.
+  now: () => number = () => performance.now(),
 ): RateLimiter {
   let windowStart = now()
   let count = 0

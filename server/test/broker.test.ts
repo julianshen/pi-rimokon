@@ -314,6 +314,24 @@ describe('Broker — stats & shutdown', () => {
     expect(client.socket.sent.at(-1)).toMatchObject({ type: 'reconnect_hint' })
   })
 
+  it('closeAll keeps draining when a socket throws', () => {
+    const broker = new Broker()
+    const closed: string[] = []
+    const bad = {
+      send: () => {
+        throw new Error('broken')
+      },
+      close: () => {
+        throw new Error('broken')
+      },
+    }
+    const good = { send: () => {}, close: () => closed.push('good') }
+    broker.registerAgent({ sessionId: 's1', userId: 'u1', jti: 'j', familyId: 'f', socket: bad, availability: { acceptTask: false }, state: 'idle' })
+    broker.registerAgent({ sessionId: 's2', userId: 'u1', jti: 'j2', familyId: 'f2', socket: good, availability: { acceptTask: false }, state: 'idle' })
+    expect(() => broker.closeAll(1001)).not.toThrow()
+    expect(closed).toEqual(['good']) // the good socket still got closed
+  })
+
   it('counts routing errors', () => {
     const broker = new Broker()
     const client = mkClient(broker, 'u1')
