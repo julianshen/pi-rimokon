@@ -214,3 +214,44 @@ export const refreshTokens = {
     )
   },
 }
+
+export interface AgentSessionRow {
+  session_id: string
+  user_id: string
+  jti: string
+  repo: string | null
+  status: string
+  started_at: string
+  ended_at: string | null
+  last_seq: number
+}
+
+export const agentSessions = {
+  async start(
+    db: Db,
+    row: { sessionId: string; userId: string; jti: string; repo?: string },
+  ): Promise<void> {
+    await db.query(
+      `INSERT INTO agent_sessions (session_id, user_id, jti, repo, status)
+       VALUES ($1, $2, $3, $4, 'started')`,
+      [row.sessionId, row.userId, row.jti, row.repo ?? null],
+    )
+  },
+
+  /** Close a live session (idempotent — only flips a non-ended row). */
+  async end(db: Db, sessionId: string, lastSeq: number, at: Date): Promise<void> {
+    await db.query(
+      `UPDATE agent_sessions SET status = 'ended', ended_at = $2, last_seq = $3
+       WHERE session_id = $1 AND status <> 'ended'`,
+      [sessionId, at.toISOString(), lastSeq],
+    )
+  },
+
+  async findById(db: Db, sessionId: string): Promise<AgentSessionRow | undefined> {
+    const { rows } = await db.query<AgentSessionRow>(
+      `SELECT * FROM agent_sessions WHERE session_id = $1`,
+      [sessionId],
+    )
+    return rows[0]
+  },
+}

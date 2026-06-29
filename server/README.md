@@ -7,11 +7,23 @@ endpoints and RFC 8628 device-flow auth described in
 
 ## Status
 
-**M0 — scaffold, schema, shared contract.** Server boots, `GET /healthz` → 200,
-migrations create the spec §6 tables, and `shared/protocol.ts` is the single
-source of truth for the wire contract (imported by both this server and the
-SPA). Device flow (M1), `/agent` (M2), `/client` + broker (M3), frontend
-integration (M4), and deployment (M5) follow.
+- **M0** — scaffold, schema, shared contract; `GET /healthz`.
+- **M1** — RFC 8628 device flow + RS256 agent tokens (rotating refresh w/ reuse
+  revocation), `/oauth/*` + JWKS.
+- **M2** — the `/agent` WebSocket: upgrade auth (`Authorization: Bearer` +
+  `hello.token` fallback), `hello`/`ready` handshake with protocol negotiation +
+  availability (`accept_task`), framing guards, ping/pong heartbeat, session
+  lifecycle, and revocation tear-down (4403). A fake-agent harness drives it.
+
+Next: `/client` + broker (M3), frontend integration (M4), deployment (M5).
+
+### Fake agent (manual testing)
+
+```bash
+# with a server running and an agent token from the device flow:
+npm run fake-agent -- ws://127.0.0.1:8787/agent "<agent-token>"        # emits demo events
+npm run fake-agent -- ws://127.0.0.1:8787/agent "<agent-token>" --idle # idle, accept_task=true
+```
 
 ## Layout
 

@@ -3,6 +3,8 @@ import { exportPKCS8, exportSPKI, generateKeyPair } from 'jose'
 import { type AuthContext, DEFAULT_TTL } from '../src/auth/context.ts'
 import { loadSigningKeys, type SigningKeys } from '../src/auth/keys.ts'
 import { type SupabaseVerifier, SupabaseAuthError } from '../src/auth/supabaseJwt.ts'
+import { newId, signAgentToken } from '../src/auth/tokens.ts'
+import { agentTokens } from '../src/db/repositories.ts'
 import { applyMigrations } from '../src/db/migrate.ts'
 
 /** A stable test user id (UUID, since user_id columns are typed UUID). */
@@ -63,4 +65,22 @@ export async function makeHarness(
     ttl: { ...DEFAULT_TTL },
   }
   return { ctx, db, clock, keys }
+}
+
+/**
+ * Mint a valid agent access token with a backing (active) `agent_tokens` row,
+ * as the device flow would — for exercising the `/agent` socket directly.
+ */
+export async function issueAgentAccess(
+  h: TestHarness,
+): Promise<{ token: string; jti: string; familyId: string }> {
+  const jti = newId('jti')
+  const familyId = newId('fam')
+  await agentTokens.insert(h.ctx.db, { jti, familyId, userId: TEST_USER, scopes: ['agent'] })
+  const token = await signAgentToken(
+    h.ctx.keys,
+    { sub: TEST_USER, jti, familyId, scope: 'agent' },
+    { issuer: h.ctx.issuer, now: h.clock.value },
+  )
+  return { token, jti, familyId }
 }
