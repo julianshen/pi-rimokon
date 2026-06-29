@@ -40,6 +40,7 @@ export function handleAgentConnection(
 
   let authed = false
   let handshaking = false
+  let closed = false
   let sessionId: string | undefined
   let lastSeq = 0
   let lastPong = Date.now()
@@ -52,6 +53,7 @@ export function handleAgentConnection(
   }, handshakeMs)
 
   function cleanup(): void {
+    closed = true
     clearTimeout(handshakeTimer)
     if (heartbeat) clearInterval(heartbeat)
     if (sessionId) {
@@ -136,6 +138,13 @@ export function handleAgentConnection(
 
       sessionId = newId('ses')
       await agentSessions.start(ctx.db, { sessionId, userId, jti, repo: availability.repo })
+      // The socket may have closed during the awaits above — before this point
+      // the `close` handler had no sessionId to clean up, so end the row and
+      // bail rather than registering a dead socket / leaking a heartbeat.
+      if (closed) {
+        await agentSessions.end(ctx.db, sessionId, lastSeq, new Date(ctx.now() * 1000))
+        return
+      }
       authed = true
       clearTimeout(handshakeTimer)
       hub.register({ sessionId, userId, jti, familyId, socket, availability })
@@ -147,6 +156,7 @@ export function handleAgentConnection(
         socket.close(CLOSE_CODES.FORBIDDEN)
         return
       }
+      if (closed) return // closed during the re-check await; cleanup already ran
 
       socket.send(
         JSON.stringify({

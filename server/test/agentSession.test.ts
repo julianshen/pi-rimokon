@@ -185,6 +185,19 @@ describe('/agent session lifecycle', () => {
     expect(socket.pings).toBeGreaterThan(0)
   })
 
+  it('does not register a session if the socket closes mid-handshake', async () => {
+    const { token } = await issueAgentAccess(h)
+    const socket = new FakeSocket()
+    connect(socket, { headerToken: token })
+    socket.deliver(HELLO) // starts the async handshake (parked on the first await)
+    socket.close(CLOSE_CODES.NORMAL) // peer disconnects before it settles
+    await flush()
+
+    expect(hub.listByUser(TEST_USER)).toHaveLength(0)
+    expect(socket.frames().some((f) => f.type === 'ready')).toBe(false)
+    expect(socket.pings).toBe(0) // no leaked heartbeat
+  })
+
   it('closes with 4403 when the family is revoked mid-handshake (re-check)', async () => {
     const { token, jti } = await issueAgentAccess(h)
     // isActive: active on the pre-register check, revoked on the post-register
