@@ -72,9 +72,10 @@ export function handleAgentConnection(
       return
     }
     if (authed) {
-      // M2 has no broker yet: just track the per-session event high-water mark.
-      const seq = res.frame.seq
-      if (typeof seq === 'number' && seq > lastSeq) lastSeq = seq
+      // The base Pi RPC protocol carries no seq; the server stamps a
+      // per-session monotonic seq on each inbound *event* (responses are
+      // correlated by id, not sequenced). M3 attaches it to the fan-out frame.
+      if (res.frame.type !== 'response') lastSeq += 1
       return
     }
     // Only one handshake runs per connection; frames arriving while it is
@@ -138,6 +139,14 @@ export function handleAgentConnection(
       authed = true
       clearTimeout(handshakeTimer)
       hub.register({ sessionId, userId, jti, familyId, socket, availability })
+
+      // Re-check after registering: if the family was revoked during the
+      // handshake's await window, closeFamily ran before this socket was in the
+      // hub and would have missed it. This closes that race (spec §3.2 → 4403).
+      if (!(await agentTokens.isActive(ctx.db, jti))) {
+        socket.close(CLOSE_CODES.FORBIDDEN)
+        return
+      }
 
       socket.send(
         JSON.stringify({

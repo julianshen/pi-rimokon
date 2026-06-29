@@ -160,14 +160,16 @@ describe('/agent session lifecycle', () => {
     await flush()
     const sessionId = (socket.frames()[0].data as { session_id: string }).session_id
 
-    socket.deliver({ type: 'tool_update', seq: 7 })
-    socket.deliver({ type: 'tool_update', seq: 9 })
+    // Events carry no seq; the server stamps a per-session monotonic value.
+    socket.deliver({ type: 'tool_update' })
+    socket.deliver({ type: 'tool_update' })
+    socket.deliver({ type: 'response', command: 'steer', id: 'c1', success: true }) // not sequenced
     socket.close(CLOSE_CODES.NORMAL)
     await flush()
 
     expect(hub.get(sessionId)).toBeUndefined()
     const row = await agentSessions.findById(h.ctx.db, sessionId)
-    expect(row).toMatchObject({ status: 'ended', last_seq: 9 })
+    expect(row).toMatchObject({ status: 'ended', last_seq: 2 })
     expect(row?.ended_at).toBeTruthy()
   })
 
@@ -181,6 +183,30 @@ describe('/agent session lifecycle', () => {
     await flush(80)
     expect(socket.lastClose).toBe(CLOSE_CODES.TIMEOUT)
     expect(socket.pings).toBeGreaterThan(0)
+  })
+
+  it('closes with 4403 when the family is revoked mid-handshake (re-check)', async () => {
+    const { token, jti } = await issueAgentAccess(h)
+    // isActive: active on the pre-register check, revoked on the post-register
+    // re-check — simulating a revoke that lands during the handshake await.
+    let activeChecks = 0
+    const realQuery = h.ctx.db.query.bind(h.ctx.db)
+    const racingDb = {
+      query: (text: string, params?: unknown[]) => {
+        if (text.includes('revoked_at IS NULL')) {
+          activeChecks += 1
+          return Promise.resolve({ rows: [{ active: activeChecks === 1 }] })
+        }
+        return realQuery(text, params)
+      },
+    } as unknown as typeof h.ctx.db
+    const socket = new FakeSocket()
+    handleAgentConnection({ ...h.ctx, db: racingDb }, hub, socket, { headerToken: token })
+    socket.deliver(HELLO)
+    await flush()
+    expect(activeChecks).toBe(2)
+    expect(socket.lastClose).toBe(CLOSE_CODES.FORBIDDEN)
+    expect(hub.get(jti)).toBeUndefined()
   })
 
   it('tears down a live socket when its token family is revoked (4403)', async () => {
