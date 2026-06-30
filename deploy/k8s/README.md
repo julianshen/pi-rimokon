@@ -30,7 +30,9 @@ store (no registry needed). **Build from the repo root** (the Dockerfile needs
 ```bash
 # from the repo root
 docker build -t pi-remote-server:0.1.0 -f server/Dockerfile .
-docker save pi-remote-server:0.1.0 | sudo k3s ctr images import -
+# Import into the k8s.io containerd namespace (where the kubelet looks for
+# images). `k3s ctr` defaults to k8s.io, but pass -n explicitly to be sure.
+docker save pi-remote-server:0.1.0 | sudo k3s ctr -n k8s.io images import -
 ```
 
 > Multi-node cluster? Import on every node, or push to a registry (Docker Hub /
@@ -67,8 +69,10 @@ kubectl apply -f server-secret.yaml
    ```
 3. In the tunnel's **Public Hostnames** tab, **Add a public hostname**:
    - **Subdomain/Domain:** `agents.jlnshen.com` (Cloudflare creates the DNS record for you)
-   - **Service type:** `HTTP`
-   - **URL:** `pi-remote-server.pi-remote.svc.cluster.local:8787`
+   - **Service → Type:** `HTTP`
+   - **Service → URL (host:port):** `pi-remote-server.pi-remote.svc.cluster.local:8787`
+     (the Type dropdown supplies the scheme, so enter host:port only here; the
+     equivalent config-file form is `service: http://pi-remote-server.pi-remote.svc.cluster.local:8787`).
    - (Additional settings → leave defaults; Cloudflare proxies WebSockets automatically.)
 4. Save. The tunnel shows **HEALTHY** once the cloudflared pods connect (step 5).
 

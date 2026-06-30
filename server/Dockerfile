@@ -12,12 +12,14 @@ RUN npm ci --omit=dev
 FROM node:22-slim
 ENV NODE_ENV=production
 WORKDIR /app/server
-# Non-root for least privilege.
-USER node
 COPY --chown=node:node --from=deps /app/server/node_modules ./node_modules
 COPY --chown=node:node shared /app/shared
 COPY --chown=node:node server/package.json server/tsconfig.json ./
 COPY --chown=node:node server/src ./src
+# Non-root, set after COPY so the working tree is fully node-owned.
+USER node
 EXPOSE 8787
-# `npm start` → tsx src/index.ts (reads config from env; dotenv is a no-op here).
-CMD ["npm", "start"]
+# Run node as PID 1 (via tsx's loader) so Kubernetes' SIGTERM reaches the
+# graceful-shutdown handler — `npm start` would swallow the signal and skip the
+# socket drain. Reads config from env (dotenv is a no-op here).
+CMD ["node", "--import", "tsx", "src/index.ts"]

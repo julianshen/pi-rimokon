@@ -21,19 +21,29 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       # Apply DB migrations once before the server starts (idempotent: IF NOT
       # EXISTS + per-file transactions, so it's safe on every rollout).
       initContainers:
         - name: migrate
           image: pi-remote-server:0.1.0
           imagePullPolicy: IfNotPresent
-          command: ["npm", "run", "migrate"]
+          command: ["node", "--import", "tsx", "src/db/runMigrate.ts"]
           envFrom:
             - secretRef: { name: pi-remote-server }
+          securityContext: &hardened
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
       containers:
         - name: server
           image: pi-remote-server:0.1.0
           imagePullPolicy: IfNotPresent # locally-imported image; not from a registry
+          securityContext: *hardened
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
           ports:
             - containerPort: 8787
           envFrom:
@@ -49,5 +59,9 @@ spec:
           resources:
             requests: { cpu: "50m", memory: "96Mi" }
             limits: { cpu: "500m", memory: "256Mi" }
+      # Writable scratch for tsx/esbuild + Node under readOnlyRootFilesystem.
+      volumes:
+        - name: tmp
+          emptyDir: {}
       # Give the server time to drain sockets (SIGTERM → reconnect_hint + 1001).
       terminationGracePeriodSeconds: 15

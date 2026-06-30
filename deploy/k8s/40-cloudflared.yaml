@@ -26,15 +26,25 @@ spec:
     metadata:
       labels: { app: cloudflared }
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:2024.10.0
           args:
             - tunnel
             - --no-autoupdate
+            # Expose the readiness/metrics server on :2000 so the probe below works.
+            - --metrics
+            - 0.0.0.0:2000
             - run
             - --token
             - $(TUNNEL_TOKEN)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
           env:
             - name: TUNNEL_TOKEN
               valueFrom:
