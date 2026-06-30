@@ -21,6 +21,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000 # the node image's "node" user (named → needs a numeric id)
         seccompProfile: { type: RuntimeDefault }
       # Apply DB migrations once before the server starts (idempotent: IF NOT
       # EXISTS + per-file transactions, so it's safe on every rollout).

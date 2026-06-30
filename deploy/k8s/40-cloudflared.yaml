@@ -28,6 +28,7 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 65532 # the cloudflared image's "nonroot" user (named → needs a numeric id)
         seccompProfile: { type: RuntimeDefault }
       containers:
         - name: cloudflared
