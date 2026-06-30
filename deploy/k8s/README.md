@@ -58,27 +58,60 @@ kubectl apply -f server-secret.yaml
 
 ## 4. Expose it — pick ONE option
 
-### Option A — reuse an existing host cloudflared via Traefik (recommended if you already run a tunnel)
+> **Security note.** The spec §8.1 design is **tunnel-only**: the server should
+> be reachable *only* through Cloudflare. Option B preserves that. Option A is
+> simpler (reuses an existing tunnel) but **exposes the server on your LAN** via
+> Traefik's node entrypoint — choose it only if you trust your LAN.
 
-If a `cloudflared` tunnel already runs on the node (e.g. a host `systemd`
-service), don't start a second connector — route the new hostname through the
-cluster's ingress (Traefik on k3s) instead. The host tunnel reaches Traefik at
-`localhost:80`; Traefik routes by Host to the service.
+### Option B — in-cluster cloudflared (recommended; keeps the tunnel-only boundary)
+
+A dedicated connector inside the cluster dials out to Cloudflare and exposes
+**nothing** on the host/LAN — even if a tunnel already runs on the host, this is
+the safer choice for an auth/identity service.
+
+1. Cloudflare **Zero Trust** → **Networks → Tunnels → Create a tunnel** →
+   **Cloudflared** → name it `pi-remote`.
+2. **Copy the tunnel token** from the install screen (don't run the shown
+   command); put it in the cluster:
+   ```bash
+   kubectl -n pi-remote create secret generic cloudflared-token \
+     --from-literal=token='<PASTE_TUNNEL_TOKEN>'
+   ```
+3. **Public Hostnames → Add:** `agents.jlnshen.com` · Type `HTTP` · URL
+   `pi-remote-server.pi-remote.svc.cluster.local:8787` (the in-cluster connector
+   resolves the Service DNS). Save, then apply `40-cloudflared.yaml` (step 5).
+
+### Option A — reuse an existing host cloudflared via Traefik (simpler, but LAN-exposed)
+
+If a `cloudflared` tunnel already runs on the node and you accept the trade-off
+below, route the hostname through the cluster's Traefik instead of a second
+connector:
 
 ```bash
 kubectl apply -f deploy/k8s/50-ingress.yaml   # Host agents.jlnshen.com → pi-remote-server:8787
 ```
 
-Then in the Cloudflare dashboard, on your **existing** tunnel → **Public
-Hostnames → Add a public hostname**:
-- **Domain:** `agents.jlnshen.com` (Cloudflare creates the DNS record)
-- **Service → Type:** `HTTP`, **URL:** `localhost:80` (the node's Traefik
-  entrypoint; cloudflared forwards the original Host, which Traefik matches).
+Then on your **existing** tunnel → **Public Hostnames → Add**: `agents.jlnshen.com`
+· Type `HTTP` · URL `localhost:80` (the node's Traefik entrypoint; cloudflared
+forwards the original Host, which Traefik matches). Adding a hostname doesn't
+affect the tunnel's other routes. **Skip `40-cloudflared.yaml`.**
 
-Adding a hostname doesn't affect the tunnel's other routes. Traefik handles the
-WebSocket upgrade automatically — no annotation needed. **Skip `40-cloudflared.yaml`.**
+> ⚠ **Trade-off:** k3s Traefik listens on the node's LAN IP (e.g.
+> `192.168.68.65:80`), so this route also makes the server reachable **directly
+> on the LAN** (`Host: agents.jlnshen.com`), bypassing Cloudflare's edge. `/agent`
+> and `/client` still require app auth, but `/metrics` and `/oauth/device/code`
+> are unauthenticated. Mitigate by trusting only your LAN, fronting the hostname
+> with **Cloudflare Access**, or restricting the Traefik route's source IPs.
 
-### Option B — a dedicated in-cluster cloudflared (if no host tunnel exists)
+#### (alternative for Option A, no LAN exposure)
+
+Point the host tunnel straight at the Service **ClusterIP** instead of Traefik —
+a k3s node can reach `10.43.x.x` via kube-proxy, and ClusterIPs aren't
+LAN-routable, so nothing is exposed. Pin the IP (`spec.clusterIP`) so it's
+stable, set the tunnel's service URL to `http://<clusterIP>:8787`, and skip both
+the Ingress and `40-cloudflared.yaml`.
+
+### (no host tunnel at all? Option B above is what you want)
 
 1. Cloudflare **Zero Trust** dashboard → **Networks → Tunnels → Create a tunnel**
    → **Cloudflared** → name it `pi-remote`.

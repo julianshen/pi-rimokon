@@ -1,13 +1,19 @@
-# Option A (recommended when a cloudflared tunnel already runs on the host):
-# expose the server through the cluster's existing ingress controller (Traefik
-# on k3s) instead of a second in-cluster cloudflared. The host tunnel points at
-# Traefik (http://localhost:80) and Traefik routes by Host to this service.
+# Option A — reuse an existing host cloudflared by routing through Traefik.
 #
-# Traefik (k3s default) handles the WebSocket Upgrade automatically — /agent and
-# /client work with no extra annotation. TLS terminates at the Cloudflare edge;
-# the edge→host→Traefik→pod hops stay on the local/host network.
+# ⚠ SECURITY TRADE-OFF (network exposure / trust-boundary bypass):
+# k3s Traefik's web entrypoint is bound to the NODE's LAN IP (e.g.
+# 192.168.68.65:80), so this route also makes the server reachable DIRECTLY ON
+# THE LAN — anyone who can reach that IP and sends `Host: agents.jlnshen.com`
+# hits /agent, /client, /oauth/*, /metrics, /.well-known/jwks.json WITHOUT going
+# through Cloudflare (no edge TLS / WAF / Access). The spec §8.1 design is
+# tunnel-only. /agent + /client still enforce app auth, but /metrics and
+# /oauth/device/code are unauthenticated.
 #
-# Use EITHER this Ingress (Option A) OR 40-cloudflared.yaml (Option B) — not both.
+# Use this ONLY if your LAN is trusted. To keep the tunnel-only boundary, prefer
+# Option B (40-cloudflared.yaml — in-cluster connector, nothing on the LAN), or
+# front this hostname with Cloudflare Access. Use ONE option, not both.
+#
+# Traefik handles the WebSocket Upgrade automatically — no annotation needed.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
