@@ -56,39 +56,50 @@ cp deploy/k8s/10-server-secret.example.yaml server-secret.yaml
 kubectl apply -f server-secret.yaml
 ```
 
-## 4. Cloudflare Tunnel (dashboard / token mode — simplest for K8s)
+## 4. Expose it — pick ONE option
+
+### Option A — reuse an existing host cloudflared via Traefik (recommended if you already run a tunnel)
+
+If a `cloudflared` tunnel already runs on the node (e.g. a host `systemd`
+service), don't start a second connector — route the new hostname through the
+cluster's ingress (Traefik on k3s) instead. The host tunnel reaches Traefik at
+`localhost:80`; Traefik routes by Host to the service.
+
+```bash
+kubectl apply -f deploy/k8s/50-ingress.yaml   # Host agents.jlnshen.com → pi-remote-server:8787
+```
+
+Then in the Cloudflare dashboard, on your **existing** tunnel → **Public
+Hostnames → Add a public hostname**:
+- **Domain:** `agents.jlnshen.com` (Cloudflare creates the DNS record)
+- **Service → Type:** `HTTP`, **URL:** `localhost:80` (the node's Traefik
+  entrypoint; cloudflared forwards the original Host, which Traefik matches).
+
+Adding a hostname doesn't affect the tunnel's other routes. Traefik handles the
+WebSocket upgrade automatically — no annotation needed. **Skip `40-cloudflared.yaml`.**
+
+### Option B — a dedicated in-cluster cloudflared (if no host tunnel exists)
 
 1. Cloudflare **Zero Trust** dashboard → **Networks → Tunnels → Create a tunnel**
    → **Cloudflared** → name it `pi-remote`.
-2. On the install screen, **copy the tunnel token** (the long string after
-   `--token` in the shown command). You don't run that command — the token goes
-   into the cluster:
+2. **Copy the tunnel token** from the install screen (don't run the shown
+   command); put it in the cluster:
    ```bash
    kubectl -n pi-remote create secret generic cloudflared-token \
      --from-literal=token='<PASTE_TUNNEL_TOKEN>'
    ```
-3. In the tunnel's **Public Hostnames** tab, **Add a public hostname**:
-   - **Subdomain/Domain:** `agents.jlnshen.com` (Cloudflare creates the DNS record for you)
-   - **Service → Type:** `HTTP`
-   - **Service → URL (host:port):** `pi-remote-server.pi-remote.svc.cluster.local:8787`
-     (the Type dropdown supplies the scheme, so enter host:port only here; the
-     equivalent config-file form is `service: http://pi-remote-server.pi-remote.svc.cluster.local:8787`).
-   - (Additional settings → leave defaults; Cloudflare proxies WebSockets automatically.)
-4. Save. The tunnel shows **HEALTHY** once the cloudflared pods connect (step 5).
-
-> Prefer config-as-code over the dashboard? Use credentials-file mode instead:
-> mount the tunnel credentials JSON + a `config.yml` (ingress → the Service DNS)
-> via a Secret/ConfigMap. The dashboard token path above is the least-friction
-> option and is what `40-cloudflared.yaml` expects.
+3. **Public Hostnames → Add:** `agents.jlnshen.com` · Type `HTTP` · URL
+   `pi-remote-server.pi-remote.svc.cluster.local:8787` (in-cluster cloudflared
+   resolves the Service DNS). Save.
 
 ## 5. Deploy
 
 ```bash
 kubectl apply -f deploy/k8s/20-server-deployment.yaml
 kubectl apply -f deploy/k8s/30-server-service.yaml
-kubectl apply -f deploy/k8s/40-cloudflared.yaml
+# Option A: kubectl apply -f deploy/k8s/50-ingress.yaml   (already applied above)
+# Option B: kubectl apply -f deploy/k8s/40-cloudflared.yaml
 kubectl -n pi-remote rollout status deploy/pi-remote-server
-kubectl -n pi-remote rollout status deploy/cloudflared
 ```
 
 Verify, in-cluster then through the edge:

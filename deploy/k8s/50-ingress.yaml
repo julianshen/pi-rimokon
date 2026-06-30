@@ -1,0 +1,27 @@
+# Option A (recommended when a cloudflared tunnel already runs on the host):
+# expose the server through the cluster's existing ingress controller (Traefik
+# on k3s) instead of a second in-cluster cloudflared. The host tunnel points at
+# Traefik (http://localhost:80) and Traefik routes by Host to this service.
+#
+# Traefik (k3s default) handles the WebSocket Upgrade automatically — /agent and
+# /client work with no extra annotation. TLS terminates at the Cloudflare edge;
+# the edge→host→Traefik→pod hops stay on the local/host network.
+#
+# Use EITHER this Ingress (Option A) OR 40-cloudflared.yaml (Option B) — not both.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pi-remote-server
+  namespace: pi-remote
+spec:
+  rules:
+    - host: agents.jlnshen.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pi-remote-server
+                port:
+                  number: 8787
