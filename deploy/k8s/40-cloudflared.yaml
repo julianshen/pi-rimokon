@@ -1,0 +1,61 @@
+# cloudflared — the Cloudflare Tunnel connector, running in-cluster. It dials
+# OUT to Cloudflare's edge (no inbound ports), and the edge proxies the public
+# hostname's traffic — including the WebSocket Upgrade — down to it, which then
+# forwards to the server Service.
+#
+# Token mode: the tunnel + its public-hostname ingress are configured in the
+# Cloudflare dashboard (see deploy/k8s/README.md). Create the token Secret with:
+#   kubectl -n pi-remote create secret generic cloudflared-token \
+#     --from-literal=token='<TUNNEL_TOKEN>'
+#
+# In the dashboard, point the public hostname (agents.jlnshen.com) at:
+#   http://pi-remote-server.pi-remote.svc.cluster.local:8787
+#
+# Two replicas → the tunnel survives a pod restart with no downtime (the broker
+# constraint is on the SERVER, not on cloudflared; multiple connectors are fine).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: pi-remote
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: cloudflared }
+  template:
+    metadata:
+      labels: { app: cloudflared }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532 # the cloudflared image's "nonroot" user (named → needs a numeric id)
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:2024.10.0
+          args:
+            - tunnel
+            - --no-autoupdate
+            # Expose the readiness/metrics server on :2000 so the probe below works.
+            - --metrics
+            - 0.0.0.0:2000
+            - run
+            - --token
+            - $(TUNNEL_TOKEN)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token
+                  key: token
+          livenessProbe:
+            httpGet: { path: /ready, port: 2000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits: { cpu: "200m", memory: "128Mi" }

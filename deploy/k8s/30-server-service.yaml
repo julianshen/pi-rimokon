@@ -1,0 +1,15 @@
+# ClusterIP only — the server is never exposed directly; cloudflared (in-cluster)
+# reaches it via this Service DNS:
+#   http://pi-remote-server.pi-remote.svc.cluster.local:8787
+apiVersion: v1
+kind: Service
+metadata:
+  name: pi-remote-server
+  namespace: pi-remote
+spec:
+  type: ClusterIP
+  selector: { app: pi-remote-server }
+  ports:
+    - name: http
+      port: 8787
+      targetPort: 8787

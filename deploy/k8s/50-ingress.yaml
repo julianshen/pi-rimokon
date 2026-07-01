@@ -1,0 +1,33 @@
+# Option A — reuse an existing host cloudflared by routing through Traefik.
+#
+# ⚠ SECURITY TRADE-OFF (network exposure / trust-boundary bypass):
+# k3s Traefik's web entrypoint is bound to the NODE's LAN IP (e.g.
+# 192.168.68.65:80), so this route also makes the server reachable DIRECTLY ON
+# THE LAN — anyone who can reach that IP and sends `Host: agents.jlnshen.com`
+# hits /agent, /client, /oauth/*, /metrics, /.well-known/jwks.json WITHOUT going
+# through Cloudflare (no edge TLS / WAF / Access). The spec §8.1 design is
+# tunnel-only. /agent + /client still enforce app auth, but /metrics and
+# /oauth/device/code are unauthenticated.
+#
+# Use this ONLY if your LAN is trusted. To keep the tunnel-only boundary, prefer
+# Option B (40-cloudflared.yaml — in-cluster connector, nothing on the LAN), or
+# front this hostname with Cloudflare Access. Use ONE option, not both.
+#
+# Traefik handles the WebSocket Upgrade automatically — no annotation needed.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pi-remote-server
+  namespace: pi-remote
+spec:
+  rules:
+    - host: agents.jlnshen.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pi-remote-server
+                port:
+                  number: 8787

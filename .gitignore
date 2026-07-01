@@ -6,3 +6,9 @@ dist-ssr
 .DS_Store
 .vite
 *.tsbuildinfo
+
+# Secrets / keys — never commit filled deploy secrets or signing keys.
+# (The *.example.yaml templates are kept; only filled copies are ignored.)
+*.pem
+server-secret.yaml
+deploy/k8s/*-secret.yaml

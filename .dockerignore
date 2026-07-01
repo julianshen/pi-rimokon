@@ -1,0 +1,14 @@
+# Build context is the repo root; keep it lean and never ship node_modules
+# (reinstalled in the image) or local secrets.
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+.git
+docs
+chats
+project
+**/*.test.ts
+**/*.test.tsx
+server/test
