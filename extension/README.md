@@ -43,6 +43,13 @@ In a Pi session: `/remote-control` → approve the code in the browser → the
 session appears in Pi Remote; steer it from there. The footer status line shows
 connection state.
 
+Point it at a specific server by passing the endpoint (overrides
+`PI_REMOTE_SERVER_URL` and the default for that invocation):
+
+```
+/remote-control wss://agents.jlnshen.com
+```
+
 ## Develop
 
 ```bash

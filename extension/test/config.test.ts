@@ -23,4 +23,10 @@ describe('loadConfig', () => {
     expect(c.httpBase).toBe('https://dev.local:9000')
     expect(c.clientId).toBe('my-cli')
   })
+
+  it('lets an explicit override URL win over env + default', () => {
+    const c = loadConfig({ PI_REMOTE_SERVER_URL: 'wss://from-env' } as NodeJS.ProcessEnv, 'wss://from-arg:8787/')
+    expect(c.wsUrl).toBe('wss://from-arg:8787')
+    expect(c.httpBase).toBe('https://from-arg:8787')
+  })
 })

@@ -23,7 +23,11 @@ interface PiEvent {
 interface ExtensionAPI {
   registerCommand(
     name: string,
-    opts: { description: string; handler: (args: string, ctx: PiCtx) => void | Promise<void> },
+    opts: {
+      description: string
+      handler: (args: string, ctx: PiCtx) => void | Promise<void>
+      getArgumentCompletions?: (prefix: string) => string[]
+    },
   ): void
   on(event: string, handler: (event: PiEvent, ctx: PiCtx) => void | Promise<void>): void
   sendUserMessage(text: string, opts?: { deliverAs?: 'steer' | 'followUp' | 'nextTurn' }): void
@@ -84,14 +88,20 @@ export default function remoteControl(pi: ExtensionAPI): void {
   }
 
   pi.registerCommand('remote-control', {
-    description: 'Connect this session to Pi Remote so a browser can observe and steer it',
-    handler: (_args, ctx) => {
+    description: 'Connect this session to Pi Remote (optional: /remote-control <wss://host>)',
+    getArgumentCompletions: () => [loadConfig().wsUrl],
+    handler: (args, ctx) => {
       lastCtx = ctx
       if (conn) {
         ctx.ui.notify('Pi Remote is already connected for this session.', 'info')
         return
       }
-      const cfg = loadConfig()
+      const override = args.trim()
+      if (override && !/^wss?:\/\//i.test(override)) {
+        ctx.ui.notify('Usage: /remote-control [wss://host] — expected a ws:// or wss:// URL', 'error')
+        return
+      }
+      const cfg = loadConfig(process.env, override || undefined)
       const store = fileCredentialStore(cfg.credentialsPath)
       conn = new RemoteConnection({
         wsUrl: cfg.wsUrl,
@@ -110,7 +120,7 @@ export default function remoteControl(pi: ExtensionAPI): void {
         onStatus: (s) => updateStatus(ctx, s),
       })
       conn.start()
-      ctx.ui.notify('Pi Remote: connecting…', 'info')
+      ctx.ui.notify(`Pi Remote: connecting to ${cfg.wsUrl}…`, 'info')
     },
   })
 

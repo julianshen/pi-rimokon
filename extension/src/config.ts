@@ -16,13 +16,16 @@ export function toHttpBase(wsUrl: string): string {
   return wsUrl.replace(/^ws/, 'http').replace(/\/$/, '')
 }
 
+/** Default server origin when neither the command arg nor env override it. */
+export const DEFAULT_SERVER_URL = 'wss://agents.jlnshen.com'
+
 /**
- * Resolve config. The server origin comes from `PI_REMOTE_SERVER_URL`
- * (falls back to the deployed default). Credentials live under ~/.pi/agent so
- * the login survives across sessions (like `pi login`).
+ * Resolve config. Server origin precedence: `overrideUrl` (the `/remote-control`
+ * argument) → `PI_REMOTE_SERVER_URL` → the deployed default. Credentials live
+ * under ~/.pi/agent so the login survives across sessions (like `pi login`).
  */
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): RemoteConfig {
-  const wsUrl = (env.PI_REMOTE_SERVER_URL ?? 'wss://agents.jlnshen.com').replace(/\/$/, '')
+export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrideUrl?: string): RemoteConfig {
+  const wsUrl = (overrideUrl || env.PI_REMOTE_SERVER_URL || DEFAULT_SERVER_URL).replace(/\/$/, '')
   return {
     wsUrl,
     httpBase: toHttpBase(wsUrl),
