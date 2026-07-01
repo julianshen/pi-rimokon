@@ -1,0 +1,22 @@
+{
+  "name": "pi-remote-control",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pi extension: /remote-control — bridge the live Pi session to the Pi Remote Server so a browser can observe and steer it.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/ws": "^8.5.13",
+    "@vitest/coverage-v8": "^2.1.9",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.9"
+  }
+}
