@@ -11,9 +11,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
-    // The standalone server has its own runner (server/vitest.config.ts);
-    // keep it out of the SPA suite.
-    exclude: ['**/node_modules/**', '**/dist/**', 'server/**'],
+    // The standalone server + extension have their own runners; keep their
+    // tests out of the SPA suite (e.g. the extension imports `ws`, which is not
+    // a root dependency).
+    exclude: ['**/node_modules/**', '**/dist/**', 'server/**', 'extension/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'text'],

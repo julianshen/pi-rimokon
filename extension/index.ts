@@ -1,8 +1,19 @@
-import { basename } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { ensureToken, fileCredentialStore } from './src/auth.ts'
 import { loadConfig } from './src/config.ts'
 import { type Availability, type ConnStatus, RemoteConnection } from './src/connection.ts'
 import type { CommandFrame } from './src/protocol.ts'
+import { parseRepoSlug } from './src/repo.ts'
+
+/** Prefer the git `owner/repo` slug (matches the UI/server); fall back to the dir name. */
+function repoIdentifier(cwd: string): string | undefined {
+  try {
+    return (parseRepoSlug(readFileSync(join(cwd, '.git', 'config'), 'utf8')) ?? basename(cwd)) || undefined
+  } catch {
+    return basename(cwd || '') || undefined
+  }
+}
 
 // --- Minimal structural view of Pi's ExtensionAPI (see pi.dev/docs/extensions).
 // Declared locally so the extension typechecks without the SDK installed; at
@@ -53,31 +64,28 @@ export default function remoteControl(pi: ExtensionAPI): void {
     mode: ctx.mode,
     state: ctx.isIdle() ? 'idle' : 'busy',
     cwd: ctx.cwd,
-    repo: basename(ctx.cwd || '') || undefined,
+    repo: repoIdentifier(ctx.cwd),
     acceptTask: true,
   })
 
   function handleCommand(frame: CommandFrame, reply: (p: Record<string, unknown>) => void): void {
-    const text = typeof frame.message === 'string' ? frame.message : ''
+    const text = typeof frame.message === 'string' ? frame.message.trim() : ''
+    const option = typeof frame.option === 'string' ? frame.option.trim() : ''
     switch (frame.type) {
       case 'prompt':
-        pi.sendUserMessage(text)
-        reply({ success: true })
-        break
       case 'steer':
-        pi.sendUserMessage(text, { deliverAs: 'steer' })
-        reply({ success: true })
-        break
+        if (!text) return reply({ success: false, error: 'invalid_request' })
+        pi.sendUserMessage(text, frame.type === 'steer' ? { deliverAs: 'steer' } : undefined)
+        return reply({ success: true })
       case 'pick_option':
-        pi.sendUserMessage(String(frame.option ?? ''))
-        reply({ success: true })
-        break
+        if (!option) return reply({ success: false, error: 'invalid_request' })
+        pi.sendUserMessage(option)
+        return reply({ success: true })
       case 'stop':
         lastCtx?.abort()
-        reply({ success: true })
-        break
+        return reply({ success: true })
       default:
-        reply({ success: false, error: 'unsupported_command' })
+        return reply({ success: false, error: 'unsupported_command' })
     }
   }
 

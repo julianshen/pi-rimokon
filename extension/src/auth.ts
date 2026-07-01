@@ -58,6 +58,16 @@ export function fileCredentialStore(path: string): CredentialStore {
 }
 
 const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
+const AUTH_TIMEOUT_MS = 20_000
+
+function reqStr(v: unknown, name: string): string {
+  if (typeof v !== 'string' || v.length === 0) throw new Error(`token response missing "${name}"`)
+  return v
+}
+function numOr(v: unknown, fallback: number): number {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
 
 async function postForm(
   fetchFn: typeof fetch,
@@ -69,6 +79,8 @@ async function postForm(
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(params).toString(),
+    // Don't let a stalled auth request wedge ensureToken() forever.
+    signal: AbortSignal.timeout(AUTH_TIMEOUT_MS),
   })
   const body = (await res.json().catch(() => ({}))) as Record<string, unknown>
   return { status: res.status, body }
@@ -87,21 +99,21 @@ export async function requestDeviceCode(
   })
   if (status !== 200) throw new Error(`device/code failed (${status})`)
   return {
-    deviceCode: String(body.device_code),
-    userCode: String(body.user_code),
-    verificationUri: String(body.verification_uri),
-    verificationUriComplete: String(body.verification_uri_complete),
-    expiresIn: Number(body.expires_in),
-    interval: Number(body.interval),
+    deviceCode: reqStr(body.device_code, 'device_code'),
+    userCode: reqStr(body.user_code, 'user_code'),
+    verificationUri: reqStr(body.verification_uri, 'verification_uri'),
+    verificationUriComplete: reqStr(body.verification_uri_complete, 'verification_uri_complete'),
+    expiresIn: numOr(body.expires_in, 900),
+    interval: numOr(body.interval, 5),
   }
 }
 
 function credsFrom(body: Record<string, unknown>, now: number): Credentials {
   return {
-    accessToken: String(body.access_token),
-    refreshToken: String(body.refresh_token),
+    accessToken: reqStr(body.access_token, 'access_token'),
+    refreshToken: reqStr(body.refresh_token, 'refresh_token'),
     obtainedAt: now,
-    expiresIn: Number(body.expires_in ?? 3600),
+    expiresIn: numOr(body.expires_in, 3600),
   }
 }
 

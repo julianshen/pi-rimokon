@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["index.ts", "src", "test"]
+  "include": ["index.ts", "src", "test", "vitest.config.ts"]
 }

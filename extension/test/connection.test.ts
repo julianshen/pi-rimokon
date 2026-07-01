@@ -110,6 +110,33 @@ describe('RemoteConnection', () => {
     expect(c).toBeInstanceOf(RemoteConnection)
   })
 
+  it('ignores commands until a successful handshake', async () => {
+    const h = harness()
+    h.conn.start()
+    await flush()
+    const s = h.sockets[0]
+    s.emit('open')
+    s.emit('message', JSON.stringify({ type: 'steer', id: 'x', message: 'early' })) // pre-handshake
+    expect(h.commands).toHaveLength(0)
+    s.emit('message', JSON.stringify({ type: 'response', command: 'hello', success: false })) // failed
+    expect(h.statuses).not.toContain('ready')
+    s.emit('message', JSON.stringify({ type: 'steer', id: 'y', message: 'still' })) // still unauthed
+    expect(h.commands).toHaveLength(0)
+    h.conn.stop()
+  })
+
+  it('drops oversized frames before parsing', async () => {
+    const h = harness()
+    h.conn.start()
+    await flush()
+    const s = h.sockets[0]
+    s.emit('open')
+    s.emit('message', JSON.stringify({ type: 'response', command: 'hello', success: true, data: { session_id: 's' } }))
+    s.emit('message', JSON.stringify({ type: 'steer', id: 'z', message: 'a'.repeat(1024 * 1024 + 16) }))
+    expect(h.commands).toHaveLength(0) // over 1 MiB → dropped, never dispatched
+    h.conn.stop()
+  })
+
   it('reconnects after a close (new socket)', async () => {
     const h = harness()
     h.conn.start()

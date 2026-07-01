@@ -1,5 +1,5 @@
 import WebSocketImpl from 'ws'
-import { type CommandFrame, PROTOCOL_VERSION, WS_SUBPROTOCOL } from './protocol.ts'
+import { type CommandFrame, MAX_FRAME_BYTES, PROTOCOL_VERSION, WS_SUBPROTOCOL } from './protocol.ts'
 
 /** What the agent advertises about this session (spec §4.1 / §5.4). */
 export interface Availability {
@@ -126,6 +126,7 @@ export class RemoteConnection {
   }
 
   private onMessage(raw: string): void {
+    if (Buffer.byteLength(raw, 'utf8') > MAX_FRAME_BYTES) return // spec §4.2 frame cap
     let frame: CommandFrame
     try {
       frame = JSON.parse(raw)
@@ -133,6 +134,7 @@ export class RemoteConnection {
       return
     }
     if (frame.type === 'response' && frame.command === 'hello') {
+      if (frame.success !== true) return // failed handshake — the server will close the socket
       this.authed = true
       this.attempts = 0
       const sessionId = String((frame.data as { session_id?: string })?.session_id ?? '')
@@ -140,7 +142,9 @@ export class RemoteConnection {
       return
     }
     if (frame.type === 'ready') return
-    // Anything else the server sends post-handshake is a command to run.
+    // Ignore anything that arrives before the handshake completes.
+    if (!this.authed) return
+    // Anything else post-handshake is a command to run.
     this.opts.onCommand(frame, (payload) => {
       this.socket?.send(
         JSON.stringify({ type: 'response', command: frame.type, id: frame.id, ...payload }),
